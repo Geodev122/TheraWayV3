@@ -1,0 +1,152 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add your custom styles below */
+
+:root {
+  --tw-color-primary: #FAF8F5;
+  --tw-color-secondary: #EAE0D5;
+  --tw-color-accent: #15686e;
+  --tw-color-accent-dark: #115054;
+  --tw-color-background: #F8F7F4;
+  --tw-color-on-dark: #FFFFFF;
+  --tw-color-on-light: #3C3633;
+  --tw-color-text-darker: #2D2A28;
+  --tw-color-highlight: #B07259;
+  --tw-color-subtle-blue: #A0AEC0;
+  --tw-color-danger: #D9534F;
+  --tw-color-success: #5CB85C;
+  --tw-color-warning: #F0AD4E;
+
+  --border-radius-card: 0.75rem; /* 12px */
+  --border-radius-modal: 1rem; /* 16px */
+  --border-radius-button: 0.5rem; /* 8px */
+
+  --shadow-subtle: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-card: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-card-hover: 0 6px 16px rgba(0,0,0,0.1);
+  --shadow-modal: 0 10px 30px rgba(0,0,0,0.15);
+  --shadow-top-lg: 0 -10px 15px -3px rgba(0, 0, 0, 0.05), 0 -4px 6px -2px rgba(0, 0, 0, 0.03);
+
+  --transition-fast: all 0.2s ease-in-out;
+  --transition-normal: all 0.3s ease-in-out;
+}
+
+body { 
+  font-family: 'Inter', sans-serif; 
+  background-color: var(--tw-color-background);
+  color: var(--tw-color-on-light);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Refined Background Texture & Gradient */
+body::before { /* Gradient Layer */
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(ellipse at center, rgba(250, 248, 245, 0.1) 0%, var(--tw-color-background) 70%);
+  opacity: 0.6; /* Softer gradient */
+  z-index: -2; 
+  pointer-events: none;
+}
+body::after { /* Texture Layer */
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('/flower-texture.png');
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: contain; 
+  opacity: 0.025; /* More subtle texture */
+  z-index: -1; 
+  pointer-events: none;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+/* Card hover effect (can be applied with a class) */
+.theraway-card-hover {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.theraway-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Styles for Leaflet popups, ensuring they match the app's theme */
+.leaflet-popup-content-wrapper {
+  background: var(--tw-color-primary);
+  color: var(--tw-color-text-on-light);
+  border-radius: var(--border-radius-card);
+  box-shadow: var(--shadow-modal);
+  padding: 0.5rem;
+}
+.leaflet-popup-content {
+  margin: 10px !important;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.leaflet-popup-tip {
+  background: var(--tw-color-primary);
+}
+.leaflet-popup-close-button {
+  color: var(--tw-color-on-light) !important;
+  padding: 0.5rem !important;
+}
+.leaflet-popup-close-button:hover {
+  background-color: var(--tw-color-secondary) !important;
+  color: var(--tw-color-accent) !important;
+}
+.theraway-map-popup-button {
+  background-color: var(--tw-color-accent);
+  color: var(--tw-color-on-dark);
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--border-radius-button);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  margin-top: 10px;
+  width: 100%;
+  text-align: center;
+}
+.theraway-map-popup-button:hover {
+  background-color: var(--tw-color-accent-dark);
+}
+
+/* Custom Scrollbar (optional, for aesthetics - WebKit only) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--tw-color-background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--tw-color-secondary);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--tw-color-highlight);
+}
