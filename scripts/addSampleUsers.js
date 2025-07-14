@@ -32,16 +32,28 @@ const db = getFirestore(app);
 // --- Sample Data ---
 const sampleUsers = [
     {
-        email: 'sample.client@theraway.app',
-        password: 'password123',
-        name: 'Sample Client',
+        email: 'fedgee911@gmail.com',
+        password: 'clientDemo123',
+        name: 'client demo',
         roles: ['CLIENT'],
     },
     {
-        email: 'sample.therapist@theraway.app',
-        password: 'password123',
-        name: 'Dr. Sample Therapist',
+        email: 'rosaryco.cg@gmail.com',
+        password: 'therapistDemo123',
+        name: 'therapist demo',
         roles: ['THERAPIST'],
+    },
+    {
+        email: 'georges.najjar@hotmail.com',
+        password: 'clinicDemo123',
+        name: 'Clinic demo',
+        roles: ['CLINIC_OWNER'],
+    },
+    {
+        email: 'geo.elnajjar@gmail.com',
+        password: 'adminDemo123',
+        name: 'Georges El Najjar',
+        roles: ['ADMIN'],
     },
 ];
 
