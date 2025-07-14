@@ -817,7 +817,7 @@ const FilterModalComponent: React.FC<FilterModalProps> = ({
                         <label className="block text-sm font-medium text-textOnLight mb-1">{t('specializations')}</label>
                         <div className="max-h-48 overflow-y-auto border border-secondary rounded-md p-3 space-y-2 bg-background">
                             {availableSpecializations.map(spec => (
-                                <CheckboxField key={spec} id={`spec-${spec.replace(/[^a-zA-Z0-9]/g, "")}`} name={`specializations.${spec}`} label={spec} checked={(tempFilters.specializations || []).includes(spec)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent" containerClassName="!mb-0"/>
+                                <CheckboxField key={spec} id={`spec-${spec.replace(/[^a-zA-Z0-9]/g, "")}`} name={`specializations.${spec}`} label={spec} checked={(tempFilters.specializations || []).includes(spec)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent\" containerClassName="!mb-0"/>
                             ))}
                         </div>
                          <p className="text-xs text-textOnLight/70 mt-1.5">{t('selectOneOrMoreSpecializations')}</p>
@@ -826,7 +826,7 @@ const FilterModalComponent: React.FC<FilterModalProps> = ({
                         <label className="block text-sm font-medium text-textOnLight mb-1">{t('languages')}</label>
                         <div className="max-h-48 overflow-y-auto border border-secondary rounded-md p-3 space-y-2 bg-background">
                             {availableLanguages.map(lang => (
-                                <CheckboxField key={lang} id={`lang-${lang.replace(/[^a-zA-Z0-9]/g, "")}`} name={`languages.${lang}`} label={lang} checked={(tempFilters.languages || []).includes(lang)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent" containerClassName="!mb-0"/>
+                                <CheckboxField key={lang} id={`lang-${lang.replace(/[^a-zA-Z0-9]/g, "")}`} name={`languages.${lang}`} label={lang} checked={(tempFilters.languages || []).includes(lang)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent\" containerClassName="!mb-0"/>
                             ))}
                         </div>
                         <p className="text-xs text-textOnLight/70 mt-1.5">{t('selectOneOrMoreLanguages')}</p>
@@ -837,7 +837,7 @@ const FilterModalComponent: React.FC<FilterModalProps> = ({
                     <label className="block text-sm font-medium text-textOnLight mb-1">{t('availability')}</label>
                     <div className="max-h-40 overflow-y-auto border border-secondary rounded-md p-3 space-y-2 bg-background">
                         {availableAvailabilities.map(avail => (
-                            <CheckboxField key={avail} id={`avail-${avail.replace(/[^a-zA-Z0-9]/g, "")}`} name={`availability.${avail}`} label={t(avail.toLowerCase().replace(/\s+/g, ''), {default: avail})} checked={(tempFilters.availability || []).includes(avail)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent" containerClassName="!mb-0"/>
+                            <CheckboxField key={avail} id={`avail-${avail.replace(/[^a-zA-Z0-9]/g, "")}`} name={`availability.${avail}`} label={t(avail.toLowerCase().replace(/\s+/g, ''), {default: avail})} checked={(tempFilters.availability || []).includes(avail)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent\" containerClassName="!mb-0"/>
                         ))}
                     </div>
                     <p className="text-xs text-textOnLight/70 mt-1.5">{t('selectAvailabilityHint')}</p>
