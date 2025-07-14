@@ -650,26 +650,20 @@ export const TherapistFinderPage: React.FC = () => {
               <div className="absolute left-1/2 sm:left-6 transform -translate-x-1/2 sm:-translate-x-0 -top-[calc(56px/2-4px)] z-10 flex flex-col items-center group">
                  <button
                     onClick={() => setIsFilterModalOpen(true)}
-                    className={`w-14 h-14 bg-primary rounded-full shadow-xl flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1 focus:ring-offset-primary transition-all hover:scale-105 active:scale-95
+                    className={`w-10 h-10 bg-primary rounded-full shadow-lg flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1 focus:ring-offset-primary transition-all hover:scale-105 active:scale-95
                                ${filterButtonActive ? 'ring-2 ring-accent ring-offset-primary shadow-accent/30' : ''}`}
                     aria-label={filterButtonActive ? t('filterActiveAction', { count: numActiveFilters }) : t('filtersButtonLabel')}
                     aria-pressed={filterButtonActive}
                   >
-                    <span className={`w-7 h-7 text-accent`}>
+                    <span className={`w-5 h-5 text-accent`}>
                       {numActiveFilters > 0 ? <FilterSolidIcon /> : <AdjustmentsHorizontalIcon />}
                     </span>
                     {numActiveFilters > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 border-2 border-primary">
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5 border border-primary">
                         {numActiveFilters}
                       </span>
                     )}
                   </button>
-                  <span
-                    className={`mt-1 text-[10px] leading-tight font-medium group-hover:text-accent
-                               ${filterButtonActive ? 'text-accent' : 'text-textOnLight/90'}`}
-                  >
-                    {t('filtersButtonLabel')}
-                  </span>
               </div>
               <div className="flex flex-1 justify-end items-stretch h-full">
                 {[
