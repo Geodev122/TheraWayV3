@@ -241,6 +241,45 @@ The `/backend` directory (PHP files, composer.json) and `readmedb.txt` are no lo
 ## Development and Deployment
 *   **Development:** Run `npm run dev` (or `yarn dev`).
 *   **Build:** Run `npm run build` (or `yarn build`) to create a production build in the `dist` directory.
+
+## Backend Scripts
+
+The project includes comprehensive backend scripts for managing your Firebase project:
+
+### User Management
+- `npm run add-sample-users` - Add the 4 main sample users (client, therapist, clinic owner, admin)
+- `npm run seed-demo-data` - Create comprehensive demo data including therapists, clinics, and spaces
+- `npm run cleanup-demo-data` - Remove all demo data from the database
+
+### Data Management
+- `npm run backup-data` - Create a complete backup of all Firestore collections
+- `npm run restore-data <backup-file>` - Restore data from a backup file
+- `npm run validate-firestore` - Validate database structure and find issues
+- `npm run migrate-data` - Run database migrations for schema updates
+
+### Development Tools
+- `npm run generate-security-rules` - Generate Firestore and Storage security rules
+- `npm run monitor-firestore` - Real-time monitoring of database changes
+
+### Usage Examples
+```bash
+# Set up initial demo environment
+npm run add-sample-users
+npm run seed-demo-data
+
+# Create a backup before making changes
+npm run backup-data
+
+# Restore from a specific backup
+npm run restore-data backup-2024-01-01T12-00-00-000Z.json
+
+# Clean up demo data
+npm run cleanup-demo-data
+
+# Monitor database in real-time
+npm run monitor-firestore
+```
+
 *   **Deployment (e.g., Hostinger, Vercel, Netlify, Firebase Hosting):**
     1.  Build the application (`npm run build`).
     2.  Upload the contents of the `dist` directory to your hosting server (e.g., into `public_html` or a subdirectory like `public_html/app`). If using Firebase Hosting, use `firebase deploy`.

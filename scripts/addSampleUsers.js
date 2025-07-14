@@ -7,7 +7,6 @@ import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 dotenv.config();
 
 // --- Firebase Configuration ---
-// This now correctly reads from process.env after dotenv.config() is called.
 const firebaseConfig = {
     apiKey: process.env.VITE_FIREBASE_API_KEY,
     authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -77,6 +76,7 @@ async function addSampleUsers() {
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 profilePictureUrl: null,
+                isDemoAccount: true,
             };
 
             await setDoc(doc(db, 'users', user.uid), userDocPayload);

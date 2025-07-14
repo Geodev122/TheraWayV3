@@ -7,7 +7,15 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "add-sample-users": "node scripts/addSampleUsers.js"
+    "add-sample-users": "node scripts/addSampleUsers.js",
+    "seed-demo-data": "node scripts/seedDemoData.js",
+    "cleanup-demo-data": "node scripts/cleanupDemoData.js",
+    "backup-data": "node scripts/backupData.js",
+    "restore-data": "node scripts/restoreData.js",
+    "validate-firestore": "node scripts/validateFirestore.js",
+    "generate-security-rules": "node scripts/generateSecurityRules.js",
+    "migrate-data": "node scripts/migrateData.js",
+    "monitor-firestore": "node scripts/monitorFirestore.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.5.2",
