@@ -1,7 +1,6 @@
 
-
-import * as firebaseApp from "firebase/app";
-import * as fireAuth from "firebase/auth";
+import firebase from "firebase/compat/app";
+import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -27,14 +26,11 @@ console.log(
 
 
 // Initialize Firebase
-let app;
-if (!firebaseApp.getApps().length) {
-  app = firebaseApp.initializeApp(firebaseConfig);
-} else {
-  app = firebaseApp.getApp();
-}
+const app = !firebase.apps.length
+  ? firebase.initializeApp(firebaseConfig)
+  : firebase.app();
 
-const auth = fireAuth.getAuth(app);
+const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 

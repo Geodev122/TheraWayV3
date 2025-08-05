@@ -6,3 +6,6 @@ generate:
     packageJsonDir: ..\..
     react: true
     angular: true
+  kotlinSdk:
+    outputDir: dataconnect-generated\kotlin
+    package: connectors.default

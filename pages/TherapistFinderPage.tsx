@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Therapist, UserRole } from '../types';
 import { APP_NAME, AVAILABILITY_OPTIONS, SPECIALIZATIONS_LIST, LANGUAGES_LIST } from '../constants';
@@ -16,9 +15,8 @@ import { collection, query, where, getDocs, doc, setDoc, deleteDoc, limit as fir
 import * as ReactRouterDOM from 'react-router-dom';
 
 import {
-    HeartIcon, ChevronLeftIcon, ChevronRightIcon, WhatsAppIcon, InformationCircleIcon,
-    AdjustmentsHorizontalIcon, Squares2X2Icon, MapIcon, ListBulletIcon, XIcon, FilterSolidIcon,
-    SearchIcon
+    HeartIcon, ChevronLeftIcon, ChevronRightIcon, InformationCircleIcon,
+    AdjustmentsHorizontalIcon, FilterSolidIcon
 } from '../components/icons';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -37,8 +35,7 @@ interface Filters {
 const ITEMS_PER_PAGE_GRID = 9;
 const ITEMS_PER_FETCH_SPOTLIGHT = 20;
 const NAVBAR_HEIGHT_PX = 64;
-const BOTTOM_NAV_BAR_BASE_HEIGHT = 68;
-const FILTER_BUTTON_PROTRUSION_SPACE = 28;
+const NEW_NAV_BAR_HEIGHT_PX = 72;
 const ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX = 88;
 
 
@@ -54,6 +51,29 @@ const useKeyboardNavControls = (onPrev: () => void, onNext: () => void, onViewPr
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onPrev, onNext, onViewProfile, enabled]);
 };
+
+// Custom Icon components for the new navigation bar, matching the provided design
+const NavHeartIcon = ({ active }: { active: boolean }) => (
+    <div className={`flex items-center justify-center transition-all duration-300 transform group-hover:scale-110 ${active ? 'bg-yellow-400 rounded-full h-9 w-9' : 'h-9 w-9'}`}>
+        <HeartIcon filled className={`w-5 h-5 transition-colors duration-300 ${active ? 'text-accent' : 'text-teal-200'}`} />
+    </div>
+);
+
+const NavGridIcon = ({ active }: { active: boolean }) => (
+    <div className="flex items-center justify-center h-9 w-9 transform group-hover:scale-110 transition-transform duration-300">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-6 h-6 transition-colors duration-200 ${active ? 'text-yellow-400' : 'text-teal-200'}`}>
+            <path fillRule="evenodd" d="M3 3.75A.75.75 0 013.75 3h6.75a.75.75 0 01.75.75v6.75a.75.75 0 01-.75.75H3.75a.75.75 0 01-.75-.75V3.75zm12 0A.75.75 0 0115.75 3h6.75a.75.75 0 01.75.75v6.75a.75.75 0 01-.75.75h-6.75a.75.75 0 01-.75-.75V3.75zM3 14.25a.75.75 0 01.75-.75h6.75a.75.75 0 01.75.75v6.75a.75.75 0 01-.75.75H3.75a.75.75 0 01-.75-.75v-6.75zm12 0a.75.75 0 01.75-.75h6.75a.75.75 0 01.75.75v6.75a.75.75 0 01-.75.75h-6.75a.75.75 0 01-.75-.75v-6.75z" clipRule="evenodd" />
+        </svg>
+    </div>
+);
+
+const NavMapIcon = ({ active }: { active: boolean }) => (
+    <div className="flex items-center justify-center h-9 w-9 transform group-hover:scale-110 transition-transform duration-300">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-6 h-6 transition-colors duration-200 ${active ? 'text-yellow-400' : 'text-teal-200'}`}>
+            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 20l-4.95-5.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+        </svg>
+    </div>
+);
 
 
 export const TherapistFinderPage: React.FC = () => {
@@ -90,11 +110,11 @@ export const TherapistFinderPage: React.FC = () => {
   const [gridCurrentPage, setGridCurrentPage] = useState(1);
 
   const mainContentAreaPaddingBottom = useMemo(() => {
-    let navBarHeightForPadding = BOTTOM_NAV_BAR_BASE_HEIGHT;
+    let navBarHeightForPadding = NEW_NAV_BAR_HEIGHT_PX + 16; // height + bottom-4 offset
     if (viewMode === 'spotlight') {
       navBarHeightForPadding += ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX;
     }
-    return `${navBarHeightForPadding + 8}px`;
+    return `${navBarHeightForPadding + 16}px`; // Add extra space
   }, [viewMode]);
 
   const availableSpecializations = useMemo(() => SPECIALIZATIONS_LIST.sort(), []);
@@ -406,39 +426,43 @@ export const TherapistFinderPage: React.FC = () => {
       isCurrentUserAdmin: boolean;
   }> = ({ currentApiError, currentNumActiveFilters, onAdjustFiltersClick, isCurrentUserAdmin }) => {
       const { t } = useTranslation();
-      let titleKey = 'noResultsFound';
-      let messageKey = 'noResultsMessage';
-      let hintKey = '';
-      let showAdjustFilters = true;
+      
+      let title: string;
+      let message: string;
+      let showAdjustFiltersButton = true;
+      let showAdminButton = false;
 
       if (currentApiError) {
-          titleKey = 'errorLoadingTherapists';
-          messageKey = currentApiError; // Use the actual error message
-          hintKey = 'tryAgainLaterErrorHint';
-          showAdjustFilters = false;
+          title = t('errorLoadingTherapists');
+          message = t('tryAgainLaterErrorHint', { default: "This may be due to a network issue. Please try again later." });
+          showAdjustFiltersButton = false;
       } else if (currentNumActiveFilters > 0) {
-          titleKey = 'noResultsFound';
-          messageKey = 'noResultsMessage';
+          title = t('noResultsFound');
+          message = t('noResultsMessage', { default: "We couldn't find anyone matching your specific filters. Try removing a specialization or broadening your search to see more professionals." });
       } else {
-          titleKey = 'noTherapistsAvailable';
-          messageKey = isCurrentUserAdmin ? 'noTherapistsAdminMessage' : 'noTherapistsMessage';
-          showAdjustFilters = !isCurrentUserAdmin;
+          title = t('noTherapistsAvailable');
+          message = t('noTherapistsMessage', { default: "While no one is available in this area right now, our community of therapists is always growing. Please check back soon!" });
+          showAdjustFiltersButton = true;
+          if (isCurrentUserAdmin) {
+              message = t('noTherapistsAdminMessage');
+              showAdminButton = true;
+              showAdjustFiltersButton = false;
+          }
       }
 
       return (
           <div className="flex flex-col flex-grow items-center justify-center text-center p-8 h-full animate-fadeIn">
               <InformationCircleIcon className="w-20 h-20 text-accent/40 mb-6"/>
-              <h2 className="text-2xl font-semibold text-textDarker mb-3">{t(titleKey)}</h2>
-              <p className="text-textOnLight/70 max-w-md mb-1">{t(messageKey)}</p>
-              {hintKey && <p className="text-textOnLight/60 text-xs max-w-md mb-6">{t(hintKey)}</p>}
-
-              {showAdjustFilters && (
-                  <Button variant="primary" className="mt-4" onClick={onAdjustFiltersClick} leftIcon={<AdjustmentsHorizontalIcon/>}>
+              <h2 className="text-2xl font-semibold text-textDarker mb-3">{title}</h2>
+              <p className="text-textOnLight/70 max-w-md mb-1">{message}</p>
+              
+              {showAdjustFiltersButton && (
+                  <Button variant="primary" className="mt-6" onClick={onAdjustFiltersClick} leftIcon={<AdjustmentsHorizontalIcon/>}>
                       {t('adjustFilters')}
                   </Button>
               )}
-              {isCurrentUserAdmin && !currentApiError && currentNumActiveFilters === 0 && (
-                   <Button variant="primary" className="mt-4" onClick={() => navigate('/dashboard/admin')}>{t('goToAdminPanel')}</Button>
+              {showAdminButton && (
+                   <Button variant="primary" className="mt-6" onClick={() => navigate('/dashboard/admin')}>{t('goToAdminPanel')}</Button>
               )}
           </div>
       );
@@ -458,7 +482,7 @@ export const TherapistFinderPage: React.FC = () => {
     top: `${NAVBAR_HEIGHT_PX + 8}px`,
     left: `8px`,
     right: `8px`,
-    bottom: `${BOTTOM_NAV_BAR_BASE_HEIGHT + ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX + 8}px`,
+    bottom: `${NEW_NAV_BAR_HEIGHT_PX + ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX + 16 + 8}px`,
     zIndex: 30,
   }), []);
 
@@ -566,13 +590,18 @@ export const TherapistFinderPage: React.FC = () => {
         </div>
     );
   };
-
-  const filterButtonActive = isFilterModalOpen || numActiveFilters > 0;
   
   let contentArea;
   if (viewMode === 'spotlight') contentArea = renderSpotlightView();
   else if (viewMode === 'grid') contentArea = renderGridView();
   else if (viewMode === 'map') contentArea = renderMapView();
+
+    const viewModes = [
+        { key: 'spotlight', icon: NavHeartIcon, labelKey: 'viewModeSpotlight' },
+        { key: 'grid', icon: NavGridIcon, labelKey: 'viewModeGrid' },
+        { key: 'map', icon: NavMapIcon, labelKey: 'viewModeMap' },
+    ];
+
 
   return (
     <div className="flex flex-col flex-grow bg-background overflow-hidden" style={{paddingBottom: mainContentAreaPaddingBottom}}>
@@ -607,7 +636,7 @@ export const TherapistFinderPage: React.FC = () => {
             <div
                 className="fixed left-0 right-0 bg-background/95 backdrop-blur-md shadow-top-lg px-3 flex flex-col items-center justify-center border-t border-secondary/50"
                 style={{
-                    bottom: `${BOTTOM_NAV_BAR_BASE_HEIGHT}px`,
+                    bottom: `${NEW_NAV_BAR_HEIGHT_PX + 16}px`, // Adjusted for new nav bar
                     height: `${ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX}px`,
                     zIndex: 950
                 }}
@@ -637,59 +666,44 @@ export const TherapistFinderPage: React.FC = () => {
             </div>
           )}
 
-          <nav
-            className="fixed bottom-0 left-0 right-0 bg-transparent z-[1000] flex justify-center"
-            style={{ height: `${BOTTOM_NAV_BAR_BASE_HEIGHT + FILTER_BUTTON_PROTRUSION_SPACE}px` }}
-            role="navigation"
-            aria-label={t('mainNavigation')}
-          >
-            <div
-              className="relative w-full max-w-md mx-auto bg-primary rounded-t-xl sm:rounded-full shadow-top-lg flex items-end px-1 sm:px-2"
-              style={{ height: `${BOTTOM_NAV_BAR_BASE_HEIGHT}px` }}
-            >
-              <div className="absolute left-6 -top-[24px] z-10">
-                 <button
-                    onClick={() => setIsFilterModalOpen(true)}
-                    className={`w-12 h-12 relative bg-primary rounded-full shadow-xl flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1 focus:ring-offset-primary transition-all hover:scale-105 active:scale-95
-                               ${filterButtonActive ? 'ring-2 ring-accent ring-offset-primary shadow-accent/30' : ''}`}
-                    aria-label={filterButtonActive ? t('filterActiveAction', { count: numActiveFilters }) : t('filtersButtonLabel')}
-                    aria-pressed={filterButtonActive}
-                  >
-                    <span className={`w-6 h-6 text-accent`}>
-                      {numActiveFilters > 0 ? <FilterSolidIcon /> : <AdjustmentsHorizontalIcon />}
-                    </span>
-                    {numActiveFilters > 0 && (
-                      <span className="absolute top-0 right-0 bg-danger w-3 h-3 rounded-full border-2 border-primary"></span>
-                    )}
-                  </button>
-              </div>
-              <div className="flex flex-1 justify-end items-stretch h-full ml-20">
-                {[
-                  { key: 'spotlight', icon: <SearchIcon />, labelKey: 'viewModeSpotlight', currentView: 'spotlight' },
-                  { key: 'grid', icon: <Squares2X2Icon />, labelKey: 'viewModeGrid', currentView: 'grid' },
-                  { key: 'map', icon: <MapIcon />, labelKey: 'viewModeMap', currentView: 'map' },
-                ].map(item => (
-                  <button
-                    key={item.key}
-                    onClick={() => handleViewModeChange(item.currentView as ViewMode)}
-                    className={`flex-1 flex flex-col items-center justify-center h-full p-1.5 group focus:outline-none relative transition-all duration-200 ease-in-out active:scale-95 hover:bg-accent/5 rounded-lg
-                               ${viewMode === item.currentView ? 'text-accent font-semibold' : 'text-subtleBlue hover:text-accent'}`}
-                    aria-label={t(item.labelKey)}
-                    aria-pressed={viewMode === item.currentView}
-                  >
-                    <span className={`w-6 h-6 mb-0.5 transition-colors duration-200 ease-in-out
-                                     ${viewMode === item.currentView ? 'text-accent' : 'text-accent opacity-70 group-hover:opacity-100'}`}>
-                      {item.icon}
-                    </span>
-                    <span className="text-[10px] leading-tight truncate">{t(item.labelKey)}</span>
-                    {viewMode === item.currentView && (
-                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent rounded-full"></span>
-                    )}
-                  </button>
-                ))}
-              </div>
+          <div className="fixed bottom-4 inset-x-0 z-[1000] flex justify-center" role="navigation" aria-label={t('mainNavigation')}>
+            <div className="w-full max-w-sm bg-accent rounded-full shadow-2xl flex items-center justify-between p-1.5" style={{boxShadow: '0 8px 30px rgba(0,0,0,0.2)'}}>
+                <div className="flex items-center">
+                    {viewModes.map(item => {
+                        const isActive = viewMode === item.key;
+                        const IconComponent = item.icon;
+                        return (
+                            <button
+                                key={item.key}
+                                onClick={() => handleViewModeChange(item.key as ViewMode)}
+                                className="flex flex-col items-center justify-center p-1 rounded-full w-20 h-16 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-accent focus-visible:ring-white"
+                                aria-label={t(item.labelKey)}
+                                aria-pressed={isActive}
+                            >
+                                <IconComponent active={isActive} />
+                                <span className={`mt-1 text-[10px] uppercase tracking-wider transition-all duration-300 ${isActive ? 'text-white font-bold' : 'text-teal-200/80 group-hover:text-white font-medium'}`}>
+                                    {t(item.labelKey)}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="pr-1">
+                    <button
+                        onClick={() => setIsFilterModalOpen(true)}
+                        className="relative p-3 rounded-full transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-accent focus-visible:ring-white group"
+                        aria-label={t('filtersButtonLabel')}
+                    >
+                        <FilterSolidIcon className="w-7 h-7 text-teal-100 transition-transform duration-300 group-hover:scale-110" />
+                        {numActiveFilters > 0 && (
+                            <span className="absolute top-1.5 right-1.5 block h-3.5 w-3.5 rounded-full bg-red-500 border-2 border-accent animate-pulse" aria-label={`${numActiveFilters} ${t('filters')} active`}></span>
+                        )}
+                    </button>
+                </div>
             </div>
-          </nav>
+          </div>
+
 
           {selectedTherapistForModal && (
             <TherapistDetailModal

@@ -1,0 +1,56 @@
+extend type Appointment {
+  """
+  ✨ Implicit foreign key field based on `Appointment`.`booking`. It must match the value of `Booking`.`id`. See `@ref` for how to customize it.
+  """
+  bookingId: UUID @fdc_generated(from: "Appointment.booking", purpose: IMPLICIT_REF_FIELD)
+  """
+  ✨ Implicit foreign key field based on `Appointment`.`client`. It must match the value of `User`.`id`. See `@ref` for how to customize it.
+  """
+  clientId: String! @fdc_generated(from: "Appointment.client", purpose: IMPLICIT_REF_FIELD)
+  """
+  ✨ Implicit foreign key field based on `Appointment`.`therapist`. It must match the value of `Therapist`.`id`. See `@ref` for how to customize it.
+  """
+  therapistId: UUID! @fdc_generated(from: "Appointment.therapist", purpose: IMPLICIT_REF_FIELD)
+}
+extend type Booking {
+  """
+  ✨ Implicit foreign key field based on `Booking`.`client`. It must match the value of `User`.`id`. See `@ref` for how to customize it.
+  """
+  clientId: String! @fdc_generated(from: "Booking.client", purpose: IMPLICIT_REF_FIELD)
+  """
+  ✨ Implicit foreign key field based on `Booking`.`clinicSpace`. It must match the value of `ClinicSpace`.`id`. See `@ref` for how to customize it.
+  """
+  clinicSpaceId: UUID! @fdc_generated(from: "Booking.clinicSpace", purpose: IMPLICIT_REF_FIELD)
+  """
+  ✨ Implicit foreign key field based on `Booking`.`therapist`. It must match the value of `Therapist`.`id`. See `@ref` for how to customize it.
+  """
+  therapistId: UUID! @fdc_generated(from: "Booking.therapist", purpose: IMPLICIT_REF_FIELD)
+}
+extend type Clinic {
+  """
+  ✨ Implicit foreign key field based on `Clinic`.`owner`. It must match the value of `User`.`id`. See `@ref` for how to customize it.
+  """
+  ownerId: String! @fdc_generated(from: "Clinic.owner", purpose: IMPLICIT_REF_FIELD)
+}
+extend type ClinicSpace {
+  """
+  ✨ Implicit foreign key field based on `ClinicSpace`.`clinic`. It must match the value of `Clinic`.`id`. See `@ref` for how to customize it.
+  """
+  clinicId: UUID! @fdc_generated(from: "ClinicSpace.clinic", purpose: IMPLICIT_REF_FIELD)
+}
+extend type Review {
+  """
+  ✨ Implicit foreign key field based on `Review`.`client`. It must match the value of `User`.`id`. See `@ref` for how to customize it.
+  """
+  clientId: String! @fdc_generated(from: "Review.client", purpose: IMPLICIT_REF_FIELD)
+  """
+  ✨ Implicit foreign key field based on `Review`.`therapist`. It must match the value of `Therapist`.`id`. See `@ref` for how to customize it.
+  """
+  therapistId: UUID! @fdc_generated(from: "Review.therapist", purpose: IMPLICIT_REF_FIELD)
+}
+extend type Therapist {
+  """
+  ✨ Implicit foreign key field based on `Therapist`.`user`. It must match the value of `User`.`id`. See `@ref` for how to customize it.
+  """
+  userId: String! @fdc_generated(from: "Therapist.user", purpose: IMPLICIT_REF_FIELD)
+}

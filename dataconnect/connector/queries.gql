@@ -1,78 +1,167 @@
-# # Example queries for a simple movie app.
+# ------------------------------------------------------------------
+# Public Queries - Accessible by anyone, including guests.
+# ------------------------------------------------------------------
 
-# # @auth() directives control who can call each operation.
-# # Anyone should be able to list all movies, so the auth level is set to PUBLIC
-# query ListMovies @auth(level: PUBLIC) {
-#   movies {
-#     id
-#     title
-#     imageUrl
-#     genre
-#   }
-# }
+# Query to search for therapists based on various criteria.
+# Used in the Therapist Finder page.
+query SearchTherapists(
+  $specialty: String
+  $location: String
+  $minRating: Float
+) @auth(level: PUBLIC) {
+  therapist(
+    where: {
+      _and: [
+        { specialties: { contains: $specialty } }
+        { location: { eq: $location } }
+        { averageRating: { ge: $minRating } }
+      ]
+    }
+  ) {
+    items {
+      id
+      user {
+        fullName
+      }
+      profilePictureUrl
+      specialties
+      location
+      averageRating
+    }
+  }
+}
 
-# # List all users, only admins should be able to list all users, so we use NO_ACCESS
-# query ListUsers @auth(level: NO_ACCESS) {
-#   users {
-#     id
-#     username
-#   }
-# }
+# Query to get the detailed public profile of a single therapist.
+# Used when a user clicks on a therapist card.
+query GetTherapistDetails($id: UUID!) @auth(level: PUBLIC) {
+  therapist(id: $id) {
+    id
+    user {
+      fullName
+    }
+    profilePictureUrl
+    bio
+    specialties
+    location
+    languages
+    reviews_on_therapist {
+      items {
+        rating
+        comment
+        createdAt
+        client {
+          fullName
+        }
+      }
+    }
+  }
+}
 
-# # Logged in users can list all their reviews and movie titles associated with the review
-# # Since the query uses the uid of the current authenticated user, we set auth level to USER
-# query ListUserReviews @auth(level: USER) {
-#   user(key: { id_expr: "auth.uid" }) {
-#     id
-#     username
-#     # <field>_on_<foreign_key_field> makes it easy to grab info from another table
-#     # Here, we use it to grab all the reviews written by the user.
-#     reviews: reviews_on_user {
-#       rating
-#       reviewDate
-#       reviewText
-#       movie {
-#         id
-#         title
-#       }
-#     }
-#   }
-# }
+# Query to search for available clinic spaces.
+query SearchClinicSpaces($location: String, $availableAfter: Timestamp)
+  @auth(level: PUBLIC) {
+  clinicSpace(
+    where: {
+      _and: [
+        { clinic: { location: { eq: $location } } }
+        # This assumes you add an 'availability' field to your ClinicSpace type
+        # { availability: { gte: $availableAfter } }
+      ]
+    }
+  ) {
+    items {
+      id
+      name
+      imageUrl
+      clinic {
+        location
+      }
+      hourlyRate
+    }
+  }
+}
 
-# # Get movie by id
-# query GetMovieById($id: UUID!) @auth(level: PUBLIC) {
-#   movie(id: $id) {
-#     id
-#     title
-#     imageUrl
-#     genre
-#     metadata: movieMetadata_on_movie {
-#       rating
-#       releaseYear
-#       description
-#     }
-#     reviews: reviews_on_movie {
-#       reviewText
-#       reviewDate
-#       rating
-#       user {
-#         id
-#         username
-#       }
-#     }
-#   }
-# }
+# ------------------------------------------------------------------
+# User-Specific Queries - Accessible only by logged-in users.
+# ------------------------------------------------------------------
 
-# # Search for movies, actors, and reviews
-# query SearchMovie($titleInput: String, $genre: String) @auth(level: PUBLIC) {
-#   movies(
-#     where: {
-#       _and: [{ genre: { eq: $genre } }, { title: { contains: $titleInput } }]
-#     }
-#   ) {
-#     id
-#     title
-#     genre
-#     imageUrl
-#   }
-# }
+# Query for a logged-in user to get their own profile information.
+query GetMyProfile @auth(level: USER) {
+  # Uses the UID of the currently authenticated user.
+  user(id: { expr: "auth.uid" }) {
+    id
+    email
+    fullName
+    role
+  }
+}
+
+# Query for a client to view their upcoming and past appointments.
+query GetMyBookings @auth(level: USER) {
+  booking(where: { client: { id: { expr: "auth.uid" } } }) {
+    items {
+      id
+      startTime
+      status
+      therapist {
+        id
+        user {
+          fullName
+        }
+      }
+      clinicSpace {
+        id
+        name
+      }
+    }
+  }
+}
+
+# ------------------------------------------------------------------
+# Role-Specific Queries - For dashboards.
+# ------------------------------------------------------------------
+
+# Query for a therapist to get data for their dashboard.
+query GetTherapistDashboard @auth(level: USER) {
+  therapist(where: { user: { id: { expr: "auth.uid" } } }) {
+    items {
+      id
+      appointments_on_therapist {
+        items {
+          id
+          startTime
+          client {
+            fullName
+          }
+        }
+      }
+    }
+  }
+}
+
+# Query for a clinic owner to manage their clinics and spaces.
+query GetClinicOwnerDashboard @auth(level: USER) {
+  clinic(where: { owner: { id: { expr: "auth.uid" } } }) {
+    items {
+      id
+      name
+      clinicSpaces_on_clinic {
+        items {
+          id
+          name
+          bookings_on_clinicSpace {
+            items {
+              id
+              startTime
+              therapist {
+                user {
+                  fullName
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
