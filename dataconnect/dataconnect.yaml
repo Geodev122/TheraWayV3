@@ -1,12 +1,15 @@
-specVersion: "v1"
-serviceId: "theraway-v3"
-location: "us-central1"
+specVersion: v1
+serviceId: theraway-v3
+location: us-central1
 schema:
-  source: "./schema"
+  source: ./schema
   datasource:
     postgresql:
-      database: "fdcdb"
+      database: fdcdb
       cloudSql:
-        instanceId: "theraway-v3-fdc"
-      # schemaValidation: "COMPATIBLE"
+        instanceId: theraway-v3-fdc
 connectorDirs: ["./connector"]
+connector:
+  id: default-connector
+  source: ./connector
+  datasource: postgresql
