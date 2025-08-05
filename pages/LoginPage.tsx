@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Navigate, Link, useLocation } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { DEFAULT_USER_ROLE } from '../constants';
 import { Button } from '../components/common/Button';
 import { UserRole } from '../types';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import * as fireAuth from 'firebase/auth';
 import { auth } from '../firebase'; 
 import { CheckboxField } from '../components/dashboard/shared/FormElements';
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -30,22 +30,18 @@ export const LoginPage: React.FC = () => {
   const [isSignup, setIsSignup] = useState(false);
   
   const { login, signup, signInWithGoogle, signInWithFacebook, isAuthenticated, authLoading, authError, user, actionAttempted, closeLoginPrompt } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = ReactRouterDOM.useNavigate();
+  const location = ReactRouterDOM.useLocation();
 
   const { register, handleSubmit, formState: { errors }, watch, reset, setValue } = useForm<FormInputs>();
   const emailForPasswordReset = watch('email');
 
   useEffect(() => {
-    if ((location.state as any)?.isSigningUp) {
-      setIsSignup(true);
-      setPageTitleKey('signUpPageTitle');
-    } else {
-      setIsSignup(false);
-      setPageTitleKey('loginPageTitle');
-    }
+    const shouldBeSignup = !!(location.state as any)?.isSigningUp;
+    setIsSignup(shouldBeSignup);
+    setPageTitleKey(shouldBeSignup ? 'signUpPageTitle' : 'loginPageTitle');
     reset(); // Reset form on view change
-  }, [location.state, isSignup, reset]);
+  }, [location.state, reset]);
 
   usePageTitle(pageTitleKey);
 
@@ -65,7 +61,7 @@ export const LoginPage: React.FC = () => {
     else if (user.roles.includes(UserRole.CLIENT)) redirectTo = '/dashboard/client/profile';
     
     const from = (location.state as any)?.from?.pathname || actionAttempted || redirectTo;
-    return <Navigate to={from} replace />;
+    return <ReactRouterDOM.Navigate to={from} replace />;
   }
 
   const handleRoleChange = (role: UserRole, isChecked: boolean) => {
@@ -94,21 +90,29 @@ export const LoginPage: React.FC = () => {
       return;
     }
     try {
-      await sendPasswordResetEmail(auth, emailForPasswordReset);
+      await fireAuth.sendPasswordResetEmail(auth, emailForPasswordReset);
       toast.success(t('passwordResetEmailSent'));
     } catch (error: any) {
       console.error("Forgot password error:", error);
       toast.error(t('passwordResetFailed'));
     }
   };
+  
+  const toggleView = () => {
+    setIsSignup(prev => {
+        const next = !prev;
+        setPageTitleKey(next ? 'signUpPageTitle' : 'loginPageTitle');
+        return next;
+    });
+  };
 
   return (
     <div className="min-h-screen flex items-start justify-center bg-background px-5 pt-0 pb-5">
       <div className="bg-primary text-textOnLight p-8 sm:p-10 rounded-xl shadow-2xl w-full max-w-md mt-8 sm:mt-12">
         <div className="text-center mb-8">
-          <Link to="/" className="text-4xl font-bold text-accent hover:text-accent/90 transition-colors">
+          <ReactRouterDOM.Link to="/" className="text-4xl font-bold text-accent hover:text-accent/90 transition-colors">
             {t('appName')}
-          </Link>
+          </ReactRouterDOM.Link>
           {actionAttempted && !isSignup && (
             <p className="text-gray-600 mt-2 text-sm">
                 {t('loginTo', { action: actionAttempted })}
@@ -243,10 +247,7 @@ export const LoginPage: React.FC = () => {
         <p className="mt-8 text-center text-sm text-gray-600">
           {isSignup ? t('alreadyHaveAccount') : t('dontHaveAccount')}{' '}
           <button 
-            onClick={() => {
-              setIsSignup(!isSignup); 
-              setPageTitleKey(isSignup ? 'loginPageTitle' : 'signUpPageTitle'); 
-            }} 
+            onClick={toggleView} 
             className="font-medium text-accent hover:text-accent/80"
           >
             {isSignup ? t('signIn') : t('signUpNow')}

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, FormEvent, useCallback, useMemo } from 'react';
-import { Outlet, Route, Routes, useOutletContext } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -93,7 +93,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({ titleKey, icon, isO
 const ClinicSettingsTabContent: React.FC = () => {
     usePageTitle('dashboardSettingsTab');
     const { t } = useTranslation();
-    const { clinicData, clinicOwnerUser, handleOwnerUserSave, handleMembershipApplication, isLoading, membershipHistory } = useOutletContext<OutletContextType>();
+    const { clinicData, clinicOwnerUser, handleOwnerUserSave, handleMembershipApplication, isLoading, membershipHistory } = ReactRouterDOM.useOutletContext<OutletContextType>();
     
     const [ownerFormData, setOwnerFormData] = useState(clinicOwnerUser || {name: '', email: '', id: '', roles: [UserRole.CLINIC_OWNER], isActive: true });
     const [paymentReceiptFile, setPaymentReceiptFile] = useState<File | null>(null);
@@ -241,12 +241,10 @@ const ClinicSettingsTabContent: React.FC = () => {
     );
 };
 
-// FULL FILE CONTENT
-// ... (The rest of the file remains the same, so I'll just paste it in)
 const ClinicProfileTabContent: React.FC = () => {
     const { t, direction } = useTranslation();
     usePageTitle('dashboardClinicProfileTab');
-    const { clinicData, handleClinicProfileSave, isLoading } = useOutletContext<OutletContextType>();
+    const { clinicData, handleClinicProfileSave, isLoading } = ReactRouterDOM.useOutletContext<OutletContextType>();
     
     const [profileData, setProfileData] = useState<Partial<Clinic>>(clinicData || {});
     const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
@@ -399,7 +397,7 @@ const ClinicProfileTabContent: React.FC = () => {
 const ClinicMySpacesTabContent: React.FC = () => {
     const { t, direction } = useTranslation();
     usePageTitle('dashboardMyClinicsTab');
-    const { clinicSpaceListings, handleAddOrUpdateSpaceListing, handleDeleteSpaceListing, isLoading } = useOutletContext<OutletContextType>();
+    const { clinicSpaceListings, handleAddOrUpdateSpaceListing, handleDeleteSpaceListing, isLoading } = ReactRouterDOM.useOutletContext<OutletContextType>();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentListing, setCurrentListing] = useState<ClinicSpaceListing | null>(null);
     const [listingFormData, setListingFormData] = useState<Partial<ClinicSpaceListing>>({});
@@ -694,7 +692,7 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
                  if(oldProfilePicUrl && oldProfilePicUrl !== dataToSave.profilePictureUrl) await deleteFileFromFirebase(oldProfilePicUrl).catch(e=>console.warn("Old clinic profile pic delete failed",e));
             } else if (updatedProfile.profilePictureUrl === null && oldProfilePicUrl) { 
                  await deleteFileFromFirebase(oldProfilePicUrl).catch(e=>console.warn("Clinic profile pic delete failed",e));
-                 dataToSave.profilePictureUrl = null; // Ensure it's set to null in Firestore
+                 dataToSave.profilePictureUrl = undefined; // Ensure it's set to undefined in Firestore
             }
 
 
@@ -905,18 +903,19 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
 
     return (
         <DashboardLayout role={UserRole.CLINIC_OWNER}>
-            <Outlet context={outletContextValue} />
+            <ReactRouterDOM.Outlet context={outletContextValue} />
         </DashboardLayout>
     );
 };
 
 export const ClinicOwnerDashboardRoutes = () => (
-    <Routes>
-        <Route element={<ClinicOwnerDashboardPageShell />}>
-            <Route index element={<ClinicProfileTabContent />} />
-            <Route path="my-clinics" element={<ClinicMySpacesTabContent />} /> {/* Renamed from my-spaces to my-clinics in nav */}
-            <Route path="analytics" element={<ClinicAnalyticsTabContent />} />
-            <Route path="settings" element={<ClinicSettingsTabContent />} />
-        </Route>
-    </Routes>
+    <ReactRouterDOM.Routes>
+        <ReactRouterDOM.Route element={<ClinicOwnerDashboardPageShell />}>
+            <ReactRouterDOM.Route index element={<ClinicProfileTabContent />} />
+            <ReactRouterDOM.Route path="my-clinics" element={<ClinicMySpacesTabContent />} /> {/* Renamed from my-spaces to my-clinics in nav */}
+            <ReactRouterDOM.Route path="analytics" element={<ClinicAnalyticsTabContent />} />
+            <ReactRouterDOM.Route path="settings" element={<ClinicSettingsTabContent />} />
+        </ReactRouterDOM.Route>
+    </ReactRouterDOM.Routes>
 );
+

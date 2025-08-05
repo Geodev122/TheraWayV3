@@ -427,3 +427,5 @@ const SearchIconComponent: React.FC<{ className?: string; title?: string }> = ({
   </svg>
 );
 export const SearchIcon = React.memo(SearchIconComponent);
+
+

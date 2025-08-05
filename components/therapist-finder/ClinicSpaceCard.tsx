@@ -75,3 +75,4 @@ const ClinicSpaceCardComponent: React.FC<ClinicSpaceCardProps> = ({ space, onVie
 };
 
 export const ClinicSpaceCard = React.memo(ClinicSpaceCardComponent);
+

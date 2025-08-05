@@ -1,17 +1,18 @@
 
-import { initializeApp, getApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+
+import * as firebaseApp from "firebase/app";
+import * as fireAuth from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // User-provided Firebase project configuration loaded from environment variables.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: (import.meta as any).env.VITE_FIREBASE_API_KEY,
+  authDomain: (import.meta as any).env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: (import.meta as any).env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: (import.meta as any).env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: (import.meta as any).env.VITE_FIREBASE_APP_ID,
 };
 
 // Check if variables are loaded. This helps developers diagnose .env issues.
@@ -27,13 +28,13 @@ console.log(
 
 // Initialize Firebase
 let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
+if (!firebaseApp.getApps().length) {
+  app = firebaseApp.initializeApp(firebaseConfig);
 } else {
-  app = getApp();
+  app = firebaseApp.getApp();
 }
 
-const auth = getAuth(app);
+const auth = fireAuth.getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 

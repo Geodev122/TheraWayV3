@@ -1,126 +1,77 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
-import { Button } from '../components/common/Button';
-import { SearchIcon, BriefcaseIcon, UsersIcon } from '../components/icons';
+import { ChevronRightIcon } from '../components/icons';
 
-// A helper component to render bold text within translations
-const Txt: React.FC<{ tKey: string }> = ({ tKey }) => {
-  const { t } = useTranslation();
-  const text = t(tKey);
-  // Split by <b>...</b> tags and render the inner part as bold.
-  const parts = text.split(/<b>(.*?)<\/b>/g);
+const ChoiceCard: React.FC<{
+  to: string;
+  state?: any;
+  title: string;
+  subtitle: string;
+  cta: string;
+  className: string;
+  icon: React.ReactNode;
+}> = ({ to, state, title, subtitle, cta, className, icon }) => {
+  const { direction } = useTranslation();
   return (
-    <>
-      {parts.map((part, i) =>
-        i % 2 === 1 ? <b key={i}>{part}</b> : part
-      )}
-    </>
+    <ReactRouterDOM.Link
+      to={to}
+      state={state}
+      className={`relative group flex-1 w-full min-h-[45vh] lg:min-h-[70vh] flex flex-col items-center justify-center p-6 sm:p-8 text-center rounded-2xl shadow-lg overflow-hidden transition-all duration-300 ease-in-out hover:shadow-2xl hover:scale-[1.02] ${className}`}
+    >
+      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300 z-0"></div>
+      <div className="relative z-10 flex flex-col items-center">
+        <div className="mb-4 text-white/80 group-hover:text-white transition-colors">
+            {icon}
+        </div>
+        <h2 className="text-3xl lg:text-4xl font-bold mb-3 text-white">{title}</h2>
+        <p className="text-lg text-white/90 max-w-sm mx-auto">{subtitle}</p>
+        <div className="mt-8">
+          <span className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-accent bg-white group-hover:bg-gray-100 transition-colors">
+            {cta}
+            <ChevronRightIcon className={`w-5 h-5 ${direction === 'rtl' ? 'mr-2 transform scale-x-[-1]' : 'ml-2'}`} />
+          </span>
+        </div>
+      </div>
+    </ReactRouterDOM.Link>
   );
 };
+
 
 export const HomePage: React.FC = () => {
   const { t } = useTranslation();
   usePageTitle('pageTitleHome');
 
   return (
-    <div className="flex-grow animate-fadeIn">
-      {/* Hero Section */}
-      <section className="relative bg-secondary/30 text-center py-20 sm:py-28 lg:py-32 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/50 to-secondary/40 z-0"></div>
-        <div 
-          className="absolute inset-0 bg-center bg-no-repeat opacity-5" 
-          style={{ backgroundImage: "url('/flower-texture.png')" }}
-        ></div>
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-textDarker tracking-tight leading-tight">
-            {t('heroTitle', { default: 'Find Your Path to Mental Wellness' })}
-          </h1>
-          <p className="mt-4 sm:mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-textOnLight/80">
-            {t('heroSubtitle', { default: 'TheraWay connects you with qualified therapists and professional clinic spaces, making mental healthcare accessible and seamless.' })}
-          </p>
-          <div className="mt-8 sm:mt-10">
-            <Link to="/find">
-              <Button size="xl" variant="primary" rightIcon={<SearchIcon className="w-6 h-6" />}>
-                {t('heroCtaButton', { default: 'Find a Therapist Now' })}
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-16 sm:py-20 bg-primary">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-accent">
-              {t('howItWorksTitle', { default: 'How TheraWay Works' })}
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
-            {/* For Clients */}
-            <div className="bg-background p-8 rounded-xl shadow-card animate-slideUpFadeIn">
-              <div className="flex items-center mb-4">
-                <div className="bg-accent/10 p-3 rounded-full mr-4">
-                  <UsersIcon className="w-8 h-8 text-accent" />
-                </div>
-                <h3 className="text-2xl font-semibold text-textDarker">
-                  {t('forClientsTitle', { default: 'For Clients' })}
-                </h3>
-              </div>
-              <ol className="space-y-4 text-textOnLight/90">
-                <li className="flex">
-                  <span className="bg-accent text-white rounded-full h-6 w-6 text-sm flex items-center justify-center mr-3 mt-1 flex-shrink-0">1</span>
-                  <span><Txt tKey="forClientsStep1" /></span>
-                </li>
-                <li className="flex">
-                  <span className="bg-accent text-white rounded-full h-6 w-6 text-sm flex items-center justify-center mr-3 mt-1 flex-shrink-0">2</span>
-                  <span><Txt tKey="forClientsStep2" /></span>
-                </li>
-                <li className="flex">
-                  <span className="bg-accent text-white rounded-full h-6 w-6 text-sm flex items-center justify-center mr-3 mt-1 flex-shrink-0">3</span>
-                  <span><Txt tKey="forClientsStep3" /></span>
-                </li>
-              </ol>
-            </div>
-
-            {/* For Professionals */}
-            <div className="bg-background p-8 rounded-xl shadow-card animate-slideUpFadeIn" style={{ animationDelay: '150ms' }}>
-              <div className="flex items-center mb-4">
-                <div className="bg-highlight/10 p-3 rounded-full mr-4">
-                  <BriefcaseIcon className="w-8 h-8 text-highlight" />
-                </div>
-                <h3 className="text-2xl font-semibold text-textDarker">
-                  {t('forTherapistsTitle', { default: 'For Professionals' })}
-                </h3>
-              </div>
-              <ol className="space-y-4 text-textOnLight/90">
-                <li className="flex">
-                  <span className="bg-highlight text-white rounded-full h-6 w-6 text-sm flex items-center justify-center mr-3 mt-1 flex-shrink-0">1</span>
-                  <span><Txt tKey="forTherapistsStep1" /></span>
-                </li>
-                <li className="flex">
-                  <span className="bg-highlight text-white rounded-full h-6 w-6 text-sm flex items-center justify-center mr-3 mt-1 flex-shrink-0">2</span>
-                  <span><Txt tKey="forTherapistsStep2" /></span>
-                </li>
-                <li className="flex">
-                  <span className="bg-highlight text-white rounded-full h-6 w-6 text-sm flex items-center justify-center mr-3 mt-1 flex-shrink-0">3</span>
-                  <span><Txt tKey="forTherapistsStep3" /></span>
-                </li>
-              </ol>
-               <div className="mt-6 text-center">
-                 <Link to="/login" state={{ isSigningUp: true }}>
-                   <Button size="lg" variant="secondary">
-                     {t('joinAsProfessionalButton', { default: 'Join as a Professional' })}
-                   </Button>
-                 </Link>
-               </div>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="flex-grow flex flex-col items-center justify-center animate-fadeIn p-4 sm:p-6 lg:p-8">
+      <div 
+        className="absolute inset-0 bg-center bg-cover opacity-20" 
+        style={{ backgroundImage: "url('/flower-texture.png')" }}
+      ></div>
+      <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8">
+        
+        <ChoiceCard
+          to="/find"
+          title={t('home.client.title')}
+          subtitle={t('home.client.subtitle')}
+          cta={t('home.client.cta')}
+          className="bg-accent"
+          icon={<i className="fas fa-heart-pulse fa-3x"></i>}
+        />
+        
+        <ChoiceCard
+          to="/login"
+          state={{ isSigningUp: true }}
+          title={t('home.professional.title')}
+          subtitle={t('home.professional.subtitle')}
+          cta={t('home.professional.cta')}
+          className="bg-highlight"
+           icon={<i className="fas fa-briefcase fa-3x"></i>}
+        />
+        
+      </div>
     </div>
   );
 };

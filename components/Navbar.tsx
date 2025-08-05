@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { Button } from './common/Button';
@@ -10,7 +10,7 @@ import { UserRole } from '../types';
 export const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const { t, language, setLanguage, direction } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = ReactRouterDOM.useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -70,34 +70,34 @@ export const Navbar: React.FC = () => {
   const renderLinks = (isMobile: boolean) => (
     <>
       {publicLinks.map(link => (
-        <Link 
+        <ReactRouterDOM.Link 
           key={link.path} 
           to={link.path} 
           onClick={() => isMobile && setIsMobileMenuOpen(false)}
           className={isMobile ? mobileLinkClass : desktopLinkClass}
         >
           {t(link.labelKey)}
-        </Link>
+        </ReactRouterDOM.Link>
       ))}
       {isAuthenticated && uniqueAuthenticatedLinks.map(link => (
-         <Link 
+         <ReactRouterDOM.Link 
           key={link.path} 
           to={link.path} 
           onClick={() => isMobile && setIsMobileMenuOpen(false)}
           className={`${isMobile ? mobileLinkClass : desktopLinkClass} flex items-center`}
         >
           {link.icon}{t(link.labelKey)}
-        </Link>
+        </ReactRouterDOM.Link>
       ))}
       {commonLinks.map(link => (
-        <Link 
+        <ReactRouterDOM.Link 
           key={link.path} 
           to={link.path} 
           onClick={() => isMobile && setIsMobileMenuOpen(false)}
           className={isMobile ? mobileLinkClass : desktopLinkClass}
           >
           {t(link.labelKey)}
-        </Link>
+        </ReactRouterDOM.Link>
       ))}
     </>
   );
@@ -107,12 +107,12 @@ export const Navbar: React.FC = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center text-decoration-none hover:opacity-90 transition-opacity">
+            <ReactRouterDOM.Link to="/" className="flex items-center text-decoration-none hover:opacity-90 transition-opacity">
               <img src="/logo.png" alt="TheraWay Logo" className="h-9 w-auto mr-2" />
               <span className="text-2xl font-bold">
                 <span className="text-textDarker">Thera</span><span className="text-accent">Way</span>
               </span>
-            </Link>
+            </ReactRouterDOM.Link>
           </div>
           
           <div className="hidden md:flex items-center space-x-1"> 

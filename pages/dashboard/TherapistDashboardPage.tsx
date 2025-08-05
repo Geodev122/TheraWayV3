@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Outlet, Route, Routes, useOutletContext, NavLink } from 'react-router-dom';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useTranslation } from '../../../hooks/useTranslation';
-import { usePageTitle } from '../../../hooks/usePageTitle';
+import { Routes, Route, Outlet, useOutletContext } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from '../../hooks/useTranslation';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Therapist, UserRole, Certification, ClinicSpaceListing, Clinic, PracticeLocation, MembershipHistoryItem } from '../../../types'; 
 import { 
     CERTIFICATION_MAX_SIZE_MB, THERAPIST_MEMBERSHIP_FEE, CLINIC_SPACE_FEATURES_LIST,
@@ -23,7 +23,7 @@ import { FileUploadField, InputField, CheckboxField, SelectField, TextareaField,
 import { Modal } from '../../components/common/Modal';
 import { ClinicSpaceCard } from '../../components/therapist-finder/ClinicSpaceCard';
 import { ClinicSpaceDetailModal } from '../../components/therapist-finder/ClinicSpaceDetailModal';
-import { db } from '../../firebase';
+import { db } from '../../../firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, Timestamp, orderBy } from 'firebase/firestore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -31,7 +31,45 @@ import { useForm, useFieldArray, Controller, SubmitHandler } from 'react-hook-fo
 import { AccordionSection } from '../../components/dashboard/shared/AccordionSection';
 
 
-// FULL FILE CONTENT continues...
+const TherapistProfileTabContent: React.FC = () => {
+    const { t } = useTranslation();
+    usePageTitle('dashboardMyProfileTab');
+    const { therapistData, saveProfileMutation, isLoading } = useOutletContext<any>();
+
+    if (isLoading && !therapistData) {
+        return <div>{t('loading')}...</div>;
+    }
+    
+    return (
+        <div>
+            <h2 className="text-2xl font-semibold mb-4">{t('myProfile')}</h2>
+            <p>{t('therapistProfileManagementNotImplemented')}</p>
+            <pre className="text-xs bg-gray-100 p-4 rounded mt-4 overflow-auto">
+                {JSON.stringify(therapistData, null, 2)}
+            </pre>
+        </div>
+    );
+};
+
+const TherapistLicensesTabContent: React.FC = () => {
+    const { t } = useTranslation();
+    usePageTitle('dashboardLicensesTab');
+    return <div>{t('dashboardLicensesTab')} - {t('contentComingSoon')}</div>;
+};
+
+const TherapistSpaceRentalTabContent: React.FC = () => {
+    const { t } = useTranslation();
+    usePageTitle('dashboardSpaceRentalTab');
+    return <div>{t('dashboardSpaceRentalTab')} - {t('contentComingSoon')}</div>;
+};
+
+const TherapistSettingsTabContent: React.FC = () => {
+    const { t } = useTranslation();
+    usePageTitle('dashboardSettingsTab');
+    return <div>{t('dashboardSettingsTab')} - {t('contentComingSoon')}</div>;
+};
+
+
 const TherapistDashboardPageShell: React.FC = () => {
     const { user: authContextUser, firebaseUser, updateUserAuthContext } = useAuth(); 
     const { t } = useTranslation();
@@ -116,3 +154,14 @@ const TherapistDashboardPageShell: React.FC = () => {
         </DashboardLayout>
     );
 };
+
+export const TherapistDashboardRoutes = () => (
+    <Routes>
+        <Route element={<TherapistDashboardPageShell />}>
+            <Route index element={<TherapistProfileTabContent />} />
+            <Route path="licenses" element={<TherapistLicensesTabContent />} />
+            <Route path="space-rental" element={<TherapistSpaceRentalTabContent />} />
+            <Route path="settings" element={<TherapistSettingsTabContent />} />
+        </Route>
+    </Routes>
+);

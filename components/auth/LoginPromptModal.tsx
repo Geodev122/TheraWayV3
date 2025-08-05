@@ -1,7 +1,7 @@
 
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { UserCircleIcon, ExclamationTriangleIcon } from '../icons'; 
@@ -15,7 +15,7 @@ interface LoginPromptModalProps {
 }
 
 export const LoginPromptModal: React.FC<LoginPromptModalProps> = ({ isOpen, onClose, actionAttempted }) => {
-  const navigate = useNavigate();
+  const navigate = ReactRouterDOM.useNavigate();
   const { t, direction } = useTranslation();
 
   const handleLoginRedirect = () => {

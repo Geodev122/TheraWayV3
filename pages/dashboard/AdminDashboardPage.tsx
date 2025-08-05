@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Outlet, Route, Routes, useOutletContext } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -124,7 +125,7 @@ const RespondToInquiryModal: React.FC<RespondToInquiryModalProps> = ({ isOpen, o
 const AdminTherapistsValidationTabContent: React.FC = () => {
     usePageTitle('dashboardTherapistsValidationTab');
     const { t, direction } = useTranslation();
-    const { therapistsList, handleTherapistStatusChange, isLoading, addActivityLogEntry } = useOutletContext<OutletContextType>();
+    const { therapistsList, handleTherapistStatusChange, isLoading, addActivityLogEntry } = ReactRouterDOM.useOutletContext<OutletContextType>();
     const [searchTerm, setSearchTerm] = useState('');
     const [noteModalOpen, setNoteModalOpen] = useState(false);
     const [selectedTarget, setSelectedTarget] = useState<{id: string; name: string; currentNotes?: string} | null>(null);
@@ -272,7 +273,7 @@ const AdminTherapistsValidationTabContent: React.FC = () => {
 const AdminClinicApprovalTabContent: React.FC = () => {
     usePageTitle('dashboardClinicApprovalTab');
     const { t, direction } = useTranslation();
-    const { clinicsList, handleClinicStatusChange, isLoading, addActivityLogEntry } = useOutletContext<OutletContextType>();
+    const { clinicsList, handleClinicStatusChange, isLoading, addActivityLogEntry } = ReactRouterDOM.useOutletContext<OutletContextType>();
     const [searchTerm, setSearchTerm] = useState('');
     const [noteModalOpen, setNoteModalOpen] = useState(false);
     const [selectedTarget, setSelectedTarget] = useState<{id: string; name: string; currentNotes?: string} | null>(null);
@@ -400,7 +401,7 @@ const AdminClinicApprovalTabContent: React.FC = () => {
 const AdminCommunicationTabContent: React.FC = () => {
     usePageTitle('dashboardCommunicationTab');
     const { t } = useTranslation();
-    const { userInquiriesList, handleInquiryStatusChange, isLoading } = useOutletContext<OutletContextType>();
+    const { userInquiriesList, handleInquiryStatusChange, isLoading } = ReactRouterDOM.useOutletContext<OutletContextType>();
     const [viewMessageModalOpen, setViewMessageModalOpen] = useState(false);
     const [respondModalOpen, setRespondModalOpen] = useState(false);
     const [selectedInquiry, setSelectedInquiry] = useState<UserInquiry | null>(null);
@@ -469,7 +470,7 @@ const AdminCommunicationTabContent: React.FC = () => {
 const AdminActivityLogTabContent: React.FC = () => {
     usePageTitle('dashboardActivityLogTab');
     const { t } = useTranslation();
-    const { activityLogsList, isLoading } = useOutletContext<OutletContextType>();
+    const { activityLogsList, isLoading } = ReactRouterDOM.useOutletContext<OutletContextType>();
     
     return (
         <div className="space-y-6 bg-primary p-4 sm:p-6 rounded-lg shadow-md text-textOnLight">
@@ -503,6 +504,68 @@ const AdminActivityLogTabContent: React.FC = () => {
                     </div>
                 ) : <p>{t('noActivityLogsFound')}</p>
             }
+        </div>
+    );
+};
+
+const AdminSiteManagementTabContent: React.FC = () => {
+    usePageTitle('dashboardSiteManagementTab');
+    const { t } = useTranslation();
+    const { addActivityLogEntry, isLoading, fetchData } = ReactRouterDOM.useOutletContext<OutletContextType>();
+    const [isCleaning, setIsCleaning] = useState(false);
+    
+    const handleClearDemoData = async () => {
+        if (!confirm(t('confirmClearDemoData'))) return;
+        
+        setIsCleaning(true);
+        await addActivityLogEntry({ action: "Started Clearing Demo Data", targetType: 'system' });
+        console.log('Clearing demo data...');
+    
+        try {
+            const batch = writeBatch(db);
+            let count = 0;
+
+            const collectionsToClean = ['users', 'therapistsData', 'clinicsData', 'clinicSpaces'];
+            
+            for (const collectionName of collectionsToClean) {
+                const q = query(collection(db, collectionName), where('isDemoAccount', '==', true));
+                const snapshot = await getDocs(q);
+                snapshot.forEach(docSnap => {
+                    batch.delete(docSnap.ref);
+                    count++;
+                });
+            }
+    
+            await batch.commit();
+    
+            alert(t('demoDataRemovedSuccess', { count }));
+            await addActivityLogEntry({ action: "Cleared Demo Data", targetType: 'system', details: { removedCount: count } });
+    
+        } catch(e: any) {
+             console.error("Error clearing demo data:", e);
+             alert(t('demoDataRemovalError', { error: e.message }));
+             await addActivityLogEntry({ action: "Failed to Clear Demo Data", targetType: 'system', details: e.message });
+        } finally {
+            setIsCleaning(false);
+            fetchData();
+        }
+    };
+    
+    return (
+        <div className="space-y-6 bg-primary p-4 sm:p-6 rounded-lg shadow-md text-textOnLight">
+            <h3 className="text-xl font-semibold text-accent flex items-center">
+                <CogIcon className="w-6 h-6 mr-2"/>
+                {t('dashboardSiteManagementTab')}
+            </h3>
+            <div className="p-4 border border-danger/50 bg-danger/5 rounded-lg">
+                <h4 className="font-semibold text-danger">{t('removeDemoDataSectionTitle')}</h4>
+                <p className="text-sm text-danger/80 mt-1">{t('removeDemoDataDescription')}</p>
+                <div className="mt-4 flex">
+                    <Button variant="danger" onClick={handleClearDemoData} disabled={isLoading || isCleaning} leftIcon={<TrashIcon />}>
+                        {isCleaning ? t('removingDemoDataInProgress') : t('removeAllDemoDataButton')}
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 };
@@ -632,18 +695,19 @@ const AdminDashboardPageShell: React.FC = () => {
 
     return (
         <DashboardLayout role={UserRole.ADMIN}>
-            <Outlet context={outletContextValue} />
+            <ReactRouterDOM.Outlet context={outletContextValue} />
         </DashboardLayout>
     );
 };
 
 export const AdminDashboardRoutes = () => (
-    <Routes>
-        <Route element={<AdminDashboardPageShell />}>
-            <Route index element={<AdminTherapistsValidationTabContent />} />
-            <Route path="clinic-approval" element={<AdminClinicApprovalTabContent />} />
-            <Route path="communication" element={<AdminCommunicationTabContent />} />
-            <Route path="activity-log" element={<AdminActivityLogTabContent />} />
-        </Route>
-    </Routes>
+    <ReactRouterDOM.Routes>
+        <ReactRouterDOM.Route element={<AdminDashboardPageShell />}>
+            <ReactRouterDOM.Route index element={<AdminTherapistsValidationTabContent />} />
+            <ReactRouterDOM.Route path="clinic-approval" element={<AdminClinicApprovalTabContent />} />
+            <ReactRouterDOM.Route path="communication" element={<AdminCommunicationTabContent />} />
+            <ReactRouterDOM.Route path="activity-log" element={<AdminActivityLogTabContent />} />
+            <ReactRouterDOM.Route path="site-management" element={<AdminSiteManagementTabContent />} />
+        </ReactRouterDOM.Route>
+    </ReactRouterDOM.Routes>
 );

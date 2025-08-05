@@ -1,8 +1,8 @@
 
 import React, { ChangeEvent, useState, useEffect } from 'react';
-import { InformationCircleIcon, ArrowUpOnSquareIcon, XCircleIcon } from '../../icons'; // Added XCircleIcon
+import { InformationCircleIcon, ArrowUpOnSquareIcon, XCircleIcon } from '../../../components/icons'; // Added XCircleIcon
 import { useTranslation } from '../../../hooks/useTranslation'; 
-import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+import * as fireStorage from "firebase/storage";
 import { storage } from '../../../firebase'; // Import Firebase storage instance
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -126,8 +126,8 @@ export const uploadFileToFirebase = async (
   path: string,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  const storageRef = ref(storage, path);
-  const uploadTask = uploadBytesResumable(storageRef, file);
+  const storageRef = fireStorage.ref(storage, path);
+  const uploadTask = fireStorage.uploadBytesResumable(storageRef, file);
 
   return new Promise((resolve, reject) => {
     uploadTask.on('state_changed',
@@ -141,7 +141,7 @@ export const uploadFileToFirebase = async (
       },
       async () => {
         try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          const downloadURL = await fireStorage.getDownloadURL(uploadTask.snapshot.ref);
           resolve(downloadURL);
         } catch (error) {
           console.error("Firebase getDownloadURL error:", error);
@@ -158,8 +158,8 @@ export const deleteFileFromFirebase = async (fileUrl: string): Promise<void> => 
     return;
   }
   try {
-    const fileRef = ref(storage, fileUrl);
-    await deleteObject(fileRef);
+    const fileRef = fireStorage.ref(storage, fileUrl);
+    await fireStorage.deleteObject(fileRef);
     console.log("File deleted successfully from Firebase Storage:", fileUrl);
   } catch (error: any) {
     if (error.code === 'storage/object-not-found') {
@@ -211,14 +211,14 @@ export const FileUploadField: React.FC<FileUploadProps> = ({
         try {
             const urlObj = new URL(currentFileUrl);
             const pathSegments = urlObj.pathname.split('/');
-            const encodedName = pathSegments.pop()?.split('?')[0];
+            const encodedName = pathSegments.pop()?.split('?')[0]; // Get name before query params
              if (encodedName) setFileName(decodeURIComponent(encodedName));
-             else setFileName(t('currentFileLabel'));
+             else setFileName(t('currentFileLabel', {default: 'Current file'}));
         } catch (e) {
-            setFileName(t('currentFileLabel'));
+            setFileName(t('currentFileLabel', {default: 'Current file'}));
         }
     }
-  }, [currentFileUrl, t]);
+  }, [currentFileUrl, t]); // Removed fileName from deps to avoid loop
 
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -227,7 +227,7 @@ export const FileUploadField: React.FC<FileUploadProps> = ({
 
     if (file) {
       if (file.size > maxSizeMB * 1024 * 1024) {
-        setInternalError(t('fileTooLargeError', { size: maxSizeMB}));
+        setInternalError(t('fileTooLargeError', { size: maxSizeMB, default: `File is too large. Max size: ${maxSizeMB}MB.`}));
         setFileName(null);
         onFileChange(null);
         if (fileInputRef.current) fileInputRef.current.value = ""; 
@@ -243,6 +243,11 @@ export const FileUploadField: React.FC<FileUploadProps> = ({
          setPreviewUrl(null);
       }
       onFileChange(file);
+    } else {
+      // No file selected or selection cancelled: revert to original state
+      setFileName(currentFileUrl ? (t('currentFileLabel', {default: 'Current file'})) : null);
+      setPreviewUrl(currentFileUrl || null);
+      onFileChange(null);
     }
   };
   
@@ -250,10 +255,8 @@ export const FileUploadField: React.FC<FileUploadProps> = ({
     setInternalError(null);
     setFileName(null);
     setPreviewUrl(null);
-    onFileChange(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    onFileChange(null); // Signal to parent that file is removed
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const isImage = accept.includes("image");
@@ -268,11 +271,11 @@ export const FileUploadField: React.FC<FileUploadProps> = ({
       <div className="mt-1 flex flex-col space-y-3">
         <div className="flex items-center space-x-3">
             {isImage && previewUrl && (
-              <img src={previewUrl} alt={t('filePreviewAlt')} className="h-20 w-20 rounded-lg object-cover shadow-sm border border-secondary" />
+              <img src={previewUrl} alt={t('filePreviewAlt', {default: 'Preview'})} className="h-20 w-20 rounded-lg object-cover shadow-sm border border-secondary" />
             )}
-            {!isImage && previewUrl && (
+            {!isImage && previewUrl && ( // For non-image files, show name (already handled by fileName state)
                  <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline truncate max-w-xs">
-                    {fileName || t('viewCurrentFile')}
+                    {fileName || t('viewCurrentFile', {default: 'View Current File'})}
                 </a>
             )}
              <input
@@ -289,20 +292,20 @@ export const FileUploadField: React.FC<FileUploadProps> = ({
                 className="cursor-pointer bg-primary py-2 px-4 border border-secondary rounded-lg shadow-sm text-sm font-medium text-textDarker hover:bg-secondary/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors flex items-center"
             >
                 <ArrowUpOnSquareIcon className={`w-4 h-4 ${direction === 'rtl' ? 'ml-2' : 'mr-2'} text-accent`} />
-                <span>{previewUrl ? t('replaceFileButton') : t('uploadFileButton')}</span>
+                <span>{fileName && !previewUrl?.startsWith('blob:') ? t('replaceFileButton', {default: 'Replace file'}) : t('uploadFileButton', {default: 'Upload file'})}</span>
             </label>
             {(previewUrl || fileName) && (
                  <button
                     type="button"
                     onClick={handleRemoveFile}
                     className="text-danger hover:text-red-700 p-1 rounded-md hover:bg-red-100/50 transition-colors"
-                    aria-label={t('removeFileButton')}
+                    aria-label={t('removeFileButton', {default: "Remove file"})}
                 >
                     <XCircleIcon className="w-5 h-5" />
                 </button>
             )}
         </div>
-        {fileName && previewUrl?.startsWith('blob:') && <p className="text-xs text-textOnLight/80 truncate max-w-xs">{t('selectedFileLabel')} {fileName}</p>}
+        {fileName && previewUrl?.startsWith('blob:') && <p className="text-xs text-textOnLight/80 truncate max-w-xs">{t('selectedFileLabel', {default: 'Selected:'})} {fileName}</p>}
       </div>
       
       {description && <p className="mt-1.5 text-xs text-textOnLight/70 flex items-center"><InformationCircleIcon className={`w-3.5 h-3.5 text-subtleBlue ${direction === 'rtl' ? 'ml-1' : 'mr-1'}`}/>{description}</p>}
@@ -325,8 +328,8 @@ export const CheckboxField: React.FC<CheckboxProps> = ({
   id,
   description,
   error,
-  containerClassName = 'mb-4',
-  className = 'h-4 w-4 text-accent border-secondary rounded focus:ring-accent focus:ring-offset-primary',
+  containerClassName = 'mb-4', // Default margin, can be overridden
+  className = 'h-4 w-4 text-accent border-secondary rounded focus:ring-accent focus:ring-offset-primary', // Adjusted for primary bg
   ...props
 }) => {
   const { direction } = useTranslation();

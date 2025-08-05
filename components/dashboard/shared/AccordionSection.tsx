@@ -42,3 +42,4 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({ titleKey, ic
         </div>
     );
 };
+

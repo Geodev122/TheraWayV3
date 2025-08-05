@@ -13,6 +13,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, limit as firestoreLimit, startAfter, Timestamp, orderBy, documentId, getDoc } from 'firebase/firestore';
+import * as ReactRouterDOM from 'react-router-dom';
 
 import {
     HeartIcon, ChevronLeftIcon, ChevronRightIcon, WhatsAppIcon, InformationCircleIcon,
@@ -20,7 +21,6 @@ import {
     SearchIcon
 } from '../components/icons';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, useParams } from 'react-router-dom';
 
 
 type ViewMode = 'spotlight' | 'grid' | 'map';
@@ -60,8 +60,8 @@ export const TherapistFinderPage: React.FC = () => {
   const { user, firebaseUser, isAuthenticated, promptLogin } = useAuth();
   const { t, direction } = useTranslation();
   usePageTitle('therapistFinderTitle');
-  const navigate = useNavigate();
-  const { therapistId: urlTherapistId } = useParams<{ therapistId: string }>();
+  const navigate = ReactRouterDOM.useNavigate();
+  const { therapistId: urlTherapistId } = ReactRouterDOM.useParams<{ therapistId: string }>();
 
   const [isLoading, setIsLoading] = useState(true);
   const [allTherapistsStorage, setAllTherapistsStorage] = useState<Therapist[]>([]);
@@ -647,31 +647,23 @@ export const TherapistFinderPage: React.FC = () => {
               className="relative w-full max-w-md mx-auto bg-primary rounded-t-xl sm:rounded-full shadow-top-lg flex items-end px-1 sm:px-2"
               style={{ height: `${BOTTOM_NAV_BAR_BASE_HEIGHT}px` }}
             >
-              <div className="absolute left-1/2 sm:left-6 transform -translate-x-1/2 sm:-translate-x-0 -top-[calc(56px/2-4px)] z-10 flex flex-col items-center group">
+              <div className="absolute left-6 -top-[24px] z-10">
                  <button
                     onClick={() => setIsFilterModalOpen(true)}
-                    className={`w-14 h-14 bg-primary rounded-full shadow-xl flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1 focus:ring-offset-primary transition-all hover:scale-105 active:scale-95
+                    className={`w-12 h-12 relative bg-primary rounded-full shadow-xl flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1 focus:ring-offset-primary transition-all hover:scale-105 active:scale-95
                                ${filterButtonActive ? 'ring-2 ring-accent ring-offset-primary shadow-accent/30' : ''}`}
                     aria-label={filterButtonActive ? t('filterActiveAction', { count: numActiveFilters }) : t('filtersButtonLabel')}
                     aria-pressed={filterButtonActive}
                   >
-                    <span className={`w-7 h-7 text-accent`}>
+                    <span className={`w-6 h-6 text-accent`}>
                       {numActiveFilters > 0 ? <FilterSolidIcon /> : <AdjustmentsHorizontalIcon />}
                     </span>
                     {numActiveFilters > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 border-2 border-primary">
-                        {numActiveFilters}
-                      </span>
+                      <span className="absolute top-0 right-0 bg-danger w-3 h-3 rounded-full border-2 border-primary"></span>
                     )}
                   </button>
-                  <span
-                    className={`mt-1 text-[10px] leading-tight font-medium group-hover:text-accent
-                               ${filterButtonActive ? 'text-accent' : 'text-textOnLight/90'}`}
-                  >
-                    {t('filtersButtonLabel')}
-                  </span>
               </div>
-              <div className="flex flex-1 justify-end items-stretch h-full">
+              <div className="flex flex-1 justify-end items-stretch h-full ml-20">
                 {[
                   { key: 'spotlight', icon: <SearchIcon />, labelKey: 'viewModeSpotlight', currentView: 'spotlight' },
                   { key: 'grid', icon: <Squares2X2Icon />, labelKey: 'viewModeGrid', currentView: 'grid' },
@@ -883,3 +875,4 @@ const FilterModalComponent: React.FC<FilterModalProps> = ({
         </Modal>
     );
 };
+

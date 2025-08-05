@@ -67,3 +67,4 @@ const ModalComponent: React.FC<ModalProps> = ({
 };
 
 export const Modal = React.memo(ModalComponent);
+

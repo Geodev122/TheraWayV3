@@ -1,7 +1,6 @@
 
-
 import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { UserRole } from '../../../types';
 import { 
     BriefcaseIcon, BuildingOfficeIcon, ShieldCheckIcon, ChartBarIcon, CogIcon, UsersIcon, 
@@ -83,7 +82,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role, children
       <main className="flex-grow p-4 sm:p-6 bg-background text-textDarker overflow-y-auto pt-6 pb-[calc(70px+1rem)]"> 
         <h1 className="text-2xl sm:text-3xl font-bold text-accent mb-6">{t(dashboardTitleKey)}</h1>
         <div className="bg-primary p-4 sm:p-6 rounded-xl shadow-card">
-          {children || <Outlet />} 
+          {children || <ReactRouterDOM.Outlet />} 
         </div>
       </main>
 
@@ -92,7 +91,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role, children
         aria-label={t('dashboardNavigationLabel', { default: 'Dashboard Navigation' })}
       >
         {navItems.map(item => (
-          <NavLink
+          <ReactRouterDOM.NavLink
             key={item.path}
             to={`${baseRoute}/${item.path}`.replace(/\/$/, '')} 
             end={item.path === ''} 
@@ -112,9 +111,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role, children
                 <span className={`text-[10px] sm:text-xs truncate transition-opacity duration-200 ease-in-out group-hover:opacity-100 ${isActive ? 'font-medium' : ''}`}>{t(item.labelKey)}</span>
               </>
             )}
-          </NavLink>
+          </ReactRouterDOM.NavLink>
         ))}
       </nav>
     </div>
   );
 };
+
