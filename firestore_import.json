@@ -1,0 +1,92 @@
+{
+  "therapistsData": {
+    "demo-therapist-1": {
+      "id": "demo-therapist-1",
+      "email": "dr.sarah.johnson@demo.com",
+      "name": "Dr. Sarah Johnson",
+      "profilePictureUrl": "https://images.pexels.com/photos/5327585/pexels-photo-5327585.jpeg?auto=compress&cs=tinysrgb&w=400",
+      "specializations": ["Cognitive Behavioral Therapy (CBT)", "Anxiety Counseling"],
+      "languages": ["English", "Spanish"],
+      "qualifications": ["PhD in Clinical Psychology", "Licensed Clinical Psychologist"],
+      "bio": "Experienced therapist specializing in anxiety and depression treatment using evidence-based approaches.",
+      "locations": [{ "address": "123 Wellness St, Mental Health City", "isPrimary": true }],
+      "whatsappNumber": "+1234567890",
+      "accountStatus": "live",
+      "isDemoAccount": true
+    },
+    "demo-therapist-2": {
+      "id": "demo-therapist-2",
+      "email": "dr.michael.brown@demo.com",
+      "name": "Dr. Michael Brown",
+      "profilePictureUrl": "https://images.pexels.com/photos/5327921/pexels-photo-5327921.jpeg?auto=compress&cs=tinysrgb&w=400",
+      "specializations": ["Family Therapy", "Relationship Counseling"],
+      "languages": ["English", "French"],
+      "qualifications": ["MA in Marriage and Family Therapy", "Licensed Marriage and Family Therapist"],
+      "bio": "Dedicated to helping families and couples build stronger, healthier relationships.",
+      "locations": [{ "address": "456 Harmony Ave, Relationship City", "isPrimary": true }],
+      "whatsappNumber": "+1234567891",
+      "accountStatus": "live",
+      "isDemoAccount": true
+    }
+  },
+  "clinicsData": {
+    "demo-clinic-1": {
+      "id": "demo-clinic-1",
+      "ownerId": "demo-clinic-owner-1",
+      "name": "Serenity Mental Health Center",
+      "profilePictureUrl": "https://images.pexels.com/photos/4386467/pexels-photo-4386467.jpeg?auto=compress&cs=tinysrgb&w=400",
+      "amenities": ["Waiting Area", "Wi-Fi", "Restroom Access", "Natural Light"],
+      "operatingHours": {
+        "Monday-Friday": "9:00 AM - 6:00 PM",
+        "Saturday": "10:00 AM - 4:00 PM",
+        "Sunday": "Closed"
+      },
+      "address": "789 Peace Blvd, Wellness District",
+      "whatsappNumber": "+1234567892",
+      "description": "A modern, peaceful environment designed for therapeutic healing and professional growth.",
+      "accountStatus": "live",
+      "isDemoAccount": true
+    }
+  },
+  "clinicSpaces": {
+    "demo-space-1": {
+      "id": "demo-space-1",
+      "name": "Therapy Room A",
+      "photos": ["https://images.pexels.com/photos/4386467/pexels-photo-4386467.jpeg?auto=compress&cs=tinysrgb&w=400"],
+      "description": "Comfortable, soundproof therapy room with natural lighting and calming decor.",
+      "rentalPrice": 50,
+      "rentalDuration": "per hour",
+      "rentalTerms": "Minimum 2-hour booking. 24-hour cancellation policy.",
+      "features": ["Soundproof", "Natural Light", "Comfortable Seating", "Wi-Fi"],
+      "clinicId": "demo-clinic-1",
+      "clinicName": "Serenity Mental Health Center",
+      "clinicAddress": "789 Peace Blvd, Wellness District",
+      "isDemoAccount": true
+    }
+  },
+  "users": {
+    "demo-therapist-1": {
+        "id": "demo-therapist-1",
+        "email": "dr.sarah.johnson@demo.com",
+        "name": "Dr. Sarah Johnson",
+        "roles": ["THERAPIST"],
+        "profilePictureUrl": "https://images.pexels.com/photos/5327585/pexels-photo-5327585.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "isDemoAccount": true
+    },
+    "demo-therapist-2": {
+        "id": "demo-therapist-2",
+        "email": "dr.michael.brown@demo.com",
+        "name": "Dr. Michael Brown",
+        "roles": ["THERAPIST"],
+        "profilePictureUrl": "https://images.pexels.com/photos/5327921/pexels-photo-5327921.jpeg?auto=compress&cs=tinysrgb&w=400",
+        "isDemoAccount": true
+    },
+    "demo-clinic-owner-1": {
+        "id": "demo-clinic-owner-1",
+        "email": "demo.clinic.owner@demo.com",
+        "name": "Demo Clinic Owner",
+        "roles": ["CLINIC_OWNER"],
+        "isDemoAccount": true
+    }
+  }
+}
