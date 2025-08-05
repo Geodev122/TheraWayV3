@@ -1,0 +1,1 @@
+feat: build schema and all needed queries

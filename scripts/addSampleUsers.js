@@ -77,6 +77,10 @@ async function addSampleUsers() {
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 profilePictureUrl: null,
+<<<<<<< HEAD
+=======
+                isDemoAccount: true,
+>>>>>>> 3f11d228cf1c692f7634b65f62ed4eeb4495a253
             };
 
             await setDoc(doc(db, 'users', user.uid), userDocPayload);
