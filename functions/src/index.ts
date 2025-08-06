@@ -12,7 +12,7 @@ export const assignDefaultRoleAndCreateUserDocument = functions.auth.user()
   .onCreate(async (user: functions.auth.UserRecord) => {
     try {
       const customClaims = {
-        roles: ["client"],
+        roles: [UserRole.CLIENT],
       };
 
       // Set custom user claims on the Firebase Auth user
@@ -42,7 +42,7 @@ export const assignDefaultRoleAndCreateUserDocument = functions.auth.user()
       await userRef.set({
         id: user.uid,
         email: user.email,
-        roles: ["client"], // Store roles in Firestore for easier querying/display
+        roles: [UserRole.CLIENT], // Store roles in Firestore for easier querying/display
         name: user.displayName || "New User",
         profilePictureUrl: user.photoURL || "",
         isDemoAccount: false,

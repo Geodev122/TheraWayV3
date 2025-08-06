@@ -1,9 +1,9 @@
 
 export enum UserRole {
-  CLIENT = 'CLIENT',
-  THERAPIST = 'THERAPIST',
-  CLINIC_OWNER = 'CLINIC_OWNER',
-  ADMIN = 'ADMIN',
+  CLIENT = 'client',
+  THERAPIST = 'therapist',
+  CLINIC_OWNER = 'clinic_owner',
+  ADMIN = 'admin',
 }
 
 export interface User {
