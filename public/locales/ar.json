@@ -260,6 +260,8 @@
   "totalClinicViewsLabel": "إجمالي مشاهدات الملف الشخصي",
   "past30DaysLabel": "آخر 30 يومًا",
   "totalTherapistConnectionsLabel": "استفسارات المعالجين",
+  "totalBookingsLabel": "إجمالي الحجوزات",
+  "totalRevenueLabel": "إجمالي الإيرادات",
   "viaPlatformFeaturesLabel": "عبر ميزات المنصة",
   "viewTrendsOverTimePlaceholder": "سيتم عرض الرسوم البيانية والتحليلات التفصيلية هنا قريبًا.",
   "editPersonalInformationTitle": "تعديل المعلومات الشخصية",

@@ -25,6 +25,19 @@ import {
 } from '../../../components/icons';
 import { db } from '../../../firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc, Timestamp, orderBy } from 'firebase/firestore';
+import { Line } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title as ChartTitle,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ChartTitle, Tooltip, Legend);
 
 
 interface OutletContextType {
@@ -409,32 +422,147 @@ const ClinicMySpacesTabContent: React.FC = () => {
         </div>
     );
 };
+interface AnalyticsEntry {
+    date: string;
+    views: number;
+    bookings: number;
+    revenue: number;
+}
+
 const ClinicAnalyticsTabContent: React.FC = () => {
     usePageTitle('dashboardAnalyticsTab');
-    const { t, direction } = useTranslation();
-    // const { analyticsData, isLoading } = useOutletContext<OutletContextType>();
-    // For now, use mock data or placeholders
+    const { t } = useTranslation();
+    const { clinicData } = useOutletContext<OutletContextType>();
+
+    const [analytics, setAnalytics] = useState<AnalyticsEntry[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            if (!clinicData?.id) return;
+            setIsLoading(true);
+            try {
+                const analyticsRef = collection(db, 'clinicAnalytics', clinicData.id, 'daily');
+                const since = new Date();
+                since.setDate(since.getDate() - 29);
+                const q = query(
+                    analyticsRef,
+                    where('date', '>=', Timestamp.fromDate(since)),
+                    orderBy('date', 'asc')
+                );
+                const snap = await getDocs(q);
+                const data: AnalyticsEntry[] = snap.docs.map(doc => {
+                    const d = doc.data();
+                    const dt = (d.date as Timestamp).toDate();
+                    return {
+                        date: dt.toLocaleDateString(),
+                        views: d.views || 0,
+                        bookings: d.bookings || 0,
+                        revenue: d.revenue || 0,
+                    };
+                });
+                setAnalytics(data);
+            } catch (err) {
+                console.error('Error fetching clinic analytics', err);
+                setAnalytics([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchAnalytics();
+    }, [clinicData?.id]);
+
+    const totals = useMemo(() => {
+        return analytics.reduce((acc, cur) => {
+            acc.views += cur.views;
+            acc.bookings += cur.bookings;
+            acc.revenue += cur.revenue;
+            return acc;
+        }, { views: 0, bookings: 0, revenue: 0 });
+    }, [analytics]);
+
+    const chartData = useMemo(() => ({
+        labels: analytics.map(a => a.date),
+        datasets: [
+            {
+                label: t('totalClinicViewsLabel'),
+                data: analytics.map(a => a.views),
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59,130,246,0.3)',
+                yAxisID: 'y',
+            },
+            {
+                label: t('totalBookingsLabel'),
+                data: analytics.map(a => a.bookings),
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16,185,129,0.3)',
+                yAxisID: 'y',
+            },
+            {
+                label: t('totalRevenueLabel'),
+                data: analytics.map(a => a.revenue),
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245,158,11,0.3)',
+                yAxisID: 'y1',
+            },
+        ],
+    }), [analytics, t]);
+
+    const chartOptions = useMemo(() => ({
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+            y: {
+                type: 'linear',
+                position: 'left',
+                beginAtZero: true,
+            },
+            y1: {
+                type: 'linear',
+                position: 'right',
+                beginAtZero: true,
+                grid: {
+                    drawOnChartArea: false,
+                },
+            },
+        },
+    }), []);
+
+    if (isLoading) {
+        return <div className="p-6 text-center text-textOnLight">{t('loading')}</div>;
+    }
+
     return (
         <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-accent flex items-center">
-                {/* <ChartBarIcon className={`w-6 h-6 ${direction === 'rtl' ? 'ml-2' : 'mr-2'}`}/> */}
+            <h3 className="text-xl font-semibold text-accent">
                 {t('clinicEngagementMetricsTitle')}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalClinicViewsLabel')}</h4>
-                    <p className="text-3xl font-bold text-accent">1,234</p>
+                    <p className="text-3xl font-bold text-accent">{totals.views}</p>
                     <p className="text-xs text-gray-500">{t('past30DaysLabel')}</p>
                 </div>
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
-                    <h4 className="text-lg font-medium text-textOnLight">{t('totalTherapistConnectionsLabel')}</h4>
-                    <p className="text-3xl font-bold text-accent">56</p>
-                    <p className="text-xs text-gray-500">{t('viaPlatformFeaturesLabel')}</p>
+                    <h4 className="text-lg font-medium text-textOnLight">{t('totalBookingsLabel')}</h4>
+                    <p className="text-3xl font-bold text-accent">{totals.bookings}</p>
+                    <p className="text-xs text-gray-500">{t('past30DaysLabel')}</p>
+                </div>
+                <div className="bg-gray-50/50 p-6 rounded-lg shadow">
+                    <h4 className="text-lg font-medium text-textOnLight">{t('totalRevenueLabel')}</h4>
+                    <p className="text-3xl font-bold text-accent">{totals.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p className="text-xs text-gray-500">{t('past30DaysLabel')}</p>
                 </div>
             </div>
-            <div className="bg-gray-50/50 p-6 rounded-lg shadow text-center">
-                <InformationCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600">{t('viewTrendsOverTimePlaceholder')}</p>
+            <div className="bg-gray-50/50 p-6 rounded-lg shadow">
+                {analytics.length > 0 ? (
+                    <Line data={chartData} options={chartOptions} />
+                ) : (
+                    <div className="text-center">
+                        <InformationCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-600">{t('viewTrendsOverTimePlaceholder')}</p>
+                    </div>
+                )}
             </div>
         </div>
     );
