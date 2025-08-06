@@ -269,16 +269,23 @@ const TherapistProfileTabContent: React.FC = () => {
                         id="languages" 
                         name="languages"
                         multiple
-                        value={formData.languages || []} 
+                        value={formData.languages || []}
                         onChange={handleLanguagesChange}
                         className="mt-1 block w-full h-32 px-3 py-2 border border-gray-300 bg-primary text-textOnLight rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent sm:text-sm"
                     >
                         {LANGUAGES_LIST.map((lang: string) => <option key={lang} value={lang}>{lang}</option>)}
                     </select>
                     <p className="mt-1 text-xs text-gray-500">{t('multiSelectHint')}</p>
-                }
-                 {formData.languages?.includes('Other') && (
-                    <InputField label={t('otherLanguagesLabel')} id="otherLanguages" name="otherLanguages" value={otherLanguagesText} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtherLanguagesText(e.target.value)} description={t('otherLanguagesHint')} />
+                </div>
+                {formData.languages?.includes('Other') && (
+                    <InputField
+                        label={t('otherLanguagesLabel')}
+                        id="otherLanguages"
+                        name="otherLanguages"
+                        value={otherLanguagesText}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtherLanguagesText(e.target.value)}
+                        description={t('otherLanguagesHint')}
+                    />
                 )}
 
                 <TextareaField label={t('qualificationsCredentials')} id="qualifications" name="qualifications" 

@@ -120,16 +120,10 @@ service cloud.firestore {
       // Admin: Full read/write access to all user documents
       allow read, write: if isAdmin();
 
-      // Therapist, Client, Clinic Owner: Read public profiles of therapists and clinic owners
-      // This rule allows reading of *only specific public fields* of user documents that have 'therapist' or 'clinic_owner' roles.
+      // Therapist, Client, Clinic Owner: Read public profiles of therapists and clinic owners.
+      // Store sensitive fields in a separate collection or serve sanitized data via Cloud Functions if needed.
       allow read: if (isTherapist() || isClient() || isClinicOwner()) &&
-                     resource.data.roles.hasAny(["therapist", "clinic_owner"]) &&
-                     request.query.keys().hasOnly([
-                         'id', 'name', 'profilePictureUrl', 'introVideoUrl', 'specializations',
-                         'otherSpecializations', 'languages', 'otherLanguages', 'qualifications',
-                         'bio', 'locations', 'isVerified', 'availability', 'profileViews', 'likes',
-                         'roles' // Allow reading roles to identify if it's a therapist/clinic_owner
-                     ]);
+                     resource.data.roles.hasAny(["therapist", "clinic_owner"]);
     }
 
     match /clinics/{clinicId} {
@@ -189,13 +183,10 @@ service cloud.firestore {
                          (request.resource.data.adminNotes == null || isValidString(request.resource.data.adminNotes)) &&
                          (request.resource.data.isDemoAccount == null || request.resource.data.isDemoAccount is bool);
 
-      // Therapists and Clients can read public clinic information
+      // Therapists and Clients can read public clinic information.
+      // Move sensitive clinic fields to another collection or expose sanitized data via Cloud Functions if required.
       allow read: if (isTherapist() || isClient()) &&
-                     resource.data.roles.hasAny(["therapist", "clinic_owner"]) &&
-                     request.query.keys().hasOnly([
-                         'id', 'name', 'profilePictureUrl', 'photos', 'amenities', 'operatingHours',
-                         'services', 'address', 'lat', 'lng', 'description', 'isVerified'
-                     ]);
+                     resource.data.roles.hasAny(["therapist", "clinic_owner"]);
     }
 
     match /clinicSpaces/{clinicSpaceId} {
@@ -217,12 +208,9 @@ service cloud.firestore {
       allow update, delete: if isClinicOwner() &&
                             resource.data.clinicId == request.auth.uid;
 
-      // Therapists and Clients can read public clinic space listings
-      allow read: if (isTherapist() || isClient()) &&
-                     request.query.keys().hasOnly([
-                         'id', 'name', 'photos', 'description', 'rentalPrice', 'rentalDuration',
-                         'rentalTerms', 'features', 'clinicId', 'clinicName', 'clinicAddress'
-                     ]);
+      // Therapists and Clients can read public clinic space listings.
+      // Move sensitive clinic space fields to another collection or serve sanitized data via Cloud Functions if needed.
+      allow read: if (isTherapist() || isClient());
     }
 
     match /userInquiries/{inquiryId} {
