@@ -40,10 +40,11 @@ const clinicNavItems: NavItem[] = [
 ];
 
 const adminNavItems: NavItem[] = [
-  { path: '', labelKey: 'dashboardTherapistsValidationTab', icon: <UsersIcon /> }, 
+  { path: '', labelKey: 'dashboardTherapistsValidationTab', icon: <UsersIcon /> },
   { path: 'clinic-approval', labelKey: 'dashboardClinicApprovalTab', icon: <BuildingOfficeIcon /> },
   { path: 'communication', labelKey: 'dashboardCommunicationTab', icon: <ChatBubbleLeftRightIcon /> },
-  { path: 'activity-log', labelKey: 'dashboardActivityLogTab', icon: <DocumentTextIcon /> }
+  { path: 'activity-log', labelKey: 'dashboardActivityLogTab', icon: <DocumentTextIcon /> },
+  { path: 'site-management', labelKey: 'dashboardSiteManagementTab', icon: <CogIcon /> }
 ];
 
 
