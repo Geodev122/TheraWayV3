@@ -24,9 +24,10 @@ interface NavItem {
 }
 
 const therapistNavItems: NavItem[] = [
-  { path: '', labelKey: 'dashboardMyProfileTab', icon: <BriefcaseIcon />, therapistOnly: true }, 
+  { path: '', labelKey: 'dashboardMyProfileTab', icon: <BriefcaseIcon />, therapistOnly: true },
   { path: 'licenses', labelKey: 'dashboardLicensesTab', icon: <DocumentDuplicateIcon />, therapistOnly: true},
-  { path: 'space-rental', labelKey: 'dashboardSpaceRentalTab', icon: <BuildingOfficeIcon />, therapistOnly: true}, 
+  { path: 'analytics', labelKey: 'dashboardAnalyticsTab', icon: <ChartBarIcon />, therapistOnly: true},
+  { path: 'space-rental', labelKey: 'dashboardSpaceRentalTab', icon: <BuildingOfficeIcon />, therapistOnly: true},
   { path: 'settings', labelKey: 'dashboardSettingsTab', icon: <CogIcon />, therapistOnly: true },
 ];
 
