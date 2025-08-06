@@ -149,6 +149,7 @@
   "immediate": "فوري",
   "english": "الإنجليزية",
   "arabic": "العربية",
+  "french": "الفرنسية",
   "mapCouldNotBeLoaded": "تعذر تحميل الخريطة. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.",
   "viewProfileFor": "عرض ملف {name}",
   "toggleIntroVideo": "تبديل الفيديو التعريفي",
