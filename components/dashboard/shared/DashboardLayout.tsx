@@ -43,8 +43,12 @@ const adminNavItems: NavItem[] = [
   { path: '', labelKey: 'dashboardTherapistsValidationTab', icon: <UsersIcon /> },
   { path: 'clinic-approval', labelKey: 'dashboardClinicApprovalTab', icon: <BuildingOfficeIcon /> },
   { path: 'communication', labelKey: 'dashboardCommunicationTab', icon: <ChatBubbleLeftRightIcon /> },
+
+  { path: 'reports', labelKey: 'dashboardReportsTab', icon: <ChartBarIcon /> },
+  { path: 'activity-log', labelKey: 'dashboardActivityLogTab', icon: <DocumentTextIcon /> }
   { path: 'activity-log', labelKey: 'dashboardActivityLogTab', icon: <DocumentTextIcon /> },
   { path: 'site-management', labelKey: 'dashboardSiteManagementTab', icon: <CogIcon /> }
+
 ];
 
 
