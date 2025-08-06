@@ -1,14 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
-import * as ReactRouterDOM from 'react-router-dom';
+import { useNavigate, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { DEFAULT_USER_ROLE } from '../constants';
 import { Button } from '../components/common/Button';
 import { UserRole } from '../types';
-import * as fireAuth from 'firebase/auth';
-import { auth } from '../firebase'; 
 import { CheckboxField } from '../components/dashboard/shared/FormElements';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -29,19 +26,23 @@ export const LoginPage: React.FC = () => {
   const [roles, setRoles] = useState<UserRole[]>([DEFAULT_USER_ROLE]);
   const [isSignup, setIsSignup] = useState(false);
   
-  const { login, signup, signInWithGoogle, signInWithFacebook, isAuthenticated, authLoading, authError, user, actionAttempted, closeLoginPrompt } = useAuth();
-  const navigate = ReactRouterDOM.useNavigate();
-  const location = ReactRouterDOM.useLocation();
+  const { login, signup, signInWithGoogle, signInWithFacebook, isAuthenticated, authLoading, authError, user, actionAttempted, closeLoginPrompt, sendPasswordResetEmail } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { register, handleSubmit, formState: { errors }, watch, reset, setValue } = useForm<FormInputs>();
   const emailForPasswordReset = watch('email');
 
   useEffect(() => {
-    const shouldBeSignup = !!(location.state as any)?.isSigningUp;
-    setIsSignup(shouldBeSignup);
-    setPageTitleKey(shouldBeSignup ? 'signUpPageTitle' : 'loginPageTitle');
+    if ((location.state as any)?.isSigningUp) {
+      setIsSignup(true);
+      setPageTitleKey('signUpPageTitle');
+    } else {
+      setIsSignup(false);
+      setPageTitleKey('loginPageTitle');
+    }
     reset(); // Reset form on view change
-  }, [location.state, reset]);
+  }, [location.state, isSignup, reset]);
 
   usePageTitle(pageTitleKey);
 
@@ -61,7 +62,7 @@ export const LoginPage: React.FC = () => {
     else if (user.roles.includes(UserRole.CLIENT)) redirectTo = '/dashboard/client/profile';
     
     const from = (location.state as any)?.from?.pathname || actionAttempted || redirectTo;
-    return <ReactRouterDOM.Navigate to={from} replace />;
+    return <Navigate to={from} replace />;
   }
 
   const handleRoleChange = (role: UserRole, isChecked: boolean) => {
@@ -90,29 +91,21 @@ export const LoginPage: React.FC = () => {
       return;
     }
     try {
-      await fireAuth.sendPasswordResetEmail(auth, emailForPasswordReset);
+      await sendPasswordResetEmail(emailForPasswordReset);
       toast.success(t('passwordResetEmailSent'));
     } catch (error: any) {
       console.error("Forgot password error:", error);
       toast.error(t('passwordResetFailed'));
     }
   };
-  
-  const toggleView = () => {
-    setIsSignup(prev => {
-        const next = !prev;
-        setPageTitleKey(next ? 'signUpPageTitle' : 'loginPageTitle');
-        return next;
-    });
-  };
 
   return (
     <div className="min-h-screen flex items-start justify-center bg-background px-5 pt-0 pb-5">
       <div className="bg-primary text-textOnLight p-8 sm:p-10 rounded-xl shadow-2xl w-full max-w-md mt-8 sm:mt-12">
         <div className="text-center mb-8">
-          <ReactRouterDOM.Link to="/" className="text-4xl font-bold text-accent hover:text-accent/90 transition-colors">
+          <Link to="/" className="text-4xl font-bold text-accent hover:text-accent/90 transition-colors">
             {t('appName')}
-          </ReactRouterDOM.Link>
+          </Link>
           {actionAttempted && !isSignup && (
             <p className="text-gray-600 mt-2 text-sm">
                 {t('loginTo', { action: actionAttempted })}
@@ -247,7 +240,10 @@ export const LoginPage: React.FC = () => {
         <p className="mt-8 text-center text-sm text-gray-600">
           {isSignup ? t('alreadyHaveAccount') : t('dontHaveAccount')}{' '}
           <button 
-            onClick={toggleView} 
+            onClick={() => {
+              setIsSignup(!isSignup); 
+              setPageTitleKey(isSignup ? 'loginPageTitle' : 'signUpPageTitle'); 
+            }} 
             className="font-medium text-accent hover:text-accent/80"
           >
             {isSignup ? t('signIn') : t('signUpNow')}

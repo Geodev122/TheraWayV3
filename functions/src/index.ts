@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { UserRole } from "../../types"; // Adjust path as needed
 
 admin.initializeApp();
 
@@ -18,6 +19,23 @@ export const assignDefaultRoleAndCreateUserDocument = functions.auth.user()
       await admin.auth().setCustomUserClaims(user.uid, customClaims);
       console.log(`Custom claims set for user ${user.uid}: ` +
                   `${JSON.stringify(customClaims)}`);
+
+      // Send email verification if the user has an email
+      if (user.email && !user.emailVerified) {
+        // Note: This requires Firebase project settings to allow email action links
+        // to be sent from a trusted domain (e.g., your Firebase Hosting domain).
+        // The actual email sending is handled by Firebase Auth backend.
+        await admin.auth().generateEmailVerificationLink(user.email)
+          .then((link) => {
+            console.log(`Email verification link for ${user.email}: ${link}`);
+            // In a real app, you'd typically send this link via a custom email
+            // service or use Firebase's built-in email templates.
+            // For now, we just log it.
+          })
+          .catch((error) => {
+            console.error("Error generating email verification link:", error);
+          });
+      }
 
       // Create a corresponding user document in Firestore
       const userRef = admin.firestore().collection("users").doc(user.uid);
@@ -65,10 +83,10 @@ export const assignDefaultRoleAndCreateUserDocument = functions.auth.user()
  *   "newRoles": ["therapist", "client"]
  * }
  */
-export const updateUserRole = https.onCall(async (data: { userId: string; newRoles: string[] }, context: https.CallableContext) => {
+export const updateUserRole = functions.https.onCall(async (data: { userId: string; newRoles: UserRole[] }, context: functions.https.CallableContext) => {
   // 1. Authenticate and Authorize: Only allow authenticated admins to call this function
   if (!context.auth) {
-    throw new https.HttpsError(
+    throw new functions.https.HttpsError(
       "unauthenticated",
       "The function must be called while authenticated.",
     );
@@ -77,8 +95,8 @@ export const updateUserRole = https.onCall(async (data: { userId: string; newRol
   const callerUid = context.auth.uid;
   const callerClaims = (await admin.auth().getUser(callerUid)).customClaims;
 
-  if (!callerClaims || !callerClaims.roles || !callerClaims.roles.includes("admin")) {
-    throw new https.HttpsError(
+  if (!callerClaims || !callerClaims.roles || !callerClaims.roles.includes(UserRole.ADMIN)) {
+    throw new functions.https.HttpsError(
       "permission-denied",
       "Only admins can update user roles.",
     );
@@ -88,16 +106,16 @@ export const updateUserRole = https.onCall(async (data: { userId: string; newRol
   const {userId, newRoles} = data;
 
   if (!userId || !Array.isArray(newRoles) || newRoles.length === 0) {
-    throw new https.HttpsError(
+    throw new functions.https.HttpsError(
       "invalid-argument",
       "Invalid input: userId and newRoles (array) are required.",
     );
   }
 
-  // Ensure newRoles only contain valid roles (optional, but good practice)
-  const validRoles = ["admin", "therapist", "client", "clinic_owner"];
-  if (!newRoles.every((role: string) => validRoles.includes(role))) {
-    throw new https.HttpsError(
+  // Ensure newRoles only contain valid roles
+  const validRoles = Object.values(UserRole);
+  if (!newRoles.every((role: string) => validRoles.includes(role as UserRole))) {
+    throw new functions.https.HttpsError(
       "invalid-argument",
       "Invalid input: newRoles contains invalid role(s).",
     );
@@ -122,13 +140,13 @@ export const updateUserRole = https.onCall(async (data: { userId: string; newRol
       `${newRoles.join(", ")}`};
   } catch (error: unknown) {
     if ((error as { code?: string }).code === "auth/user-not-found") {
-      throw new https.HttpsError(
+      throw new functions.https.HttpsError(
         "not-found",
         `User with ID ${userId} not found.`,
       );
     }
     console.error("Error updating user role:", error);
-    throw new https.HttpsError(
+    throw new functions.https.HttpsError(
       "internal",
       "Failed to update user role.",
       (error as Error).message,

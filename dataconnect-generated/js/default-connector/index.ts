@@ -1,4 +1,4 @@
-import { initializeConnector, run, runWithArgs } from "firebase-dataconnect";
+import { initializeConnector, run, runWithArgs } from "@firebase/data-connect";
 import type {
   User,
   Therapist,

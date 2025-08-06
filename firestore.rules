@@ -1,6 +1,61 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper functions for validation
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && "admin" in request.auth.token.roles;
+    }
+
+    function isTherapist() {
+      return isSignedIn() && "therapist" in request.auth.token.roles;
+    }
+
+    function isClient() {
+      return isSignedIn() && "client" in request.auth.token.roles;
+    }
+
+    function isClinicOwner() {
+      return isSignedIn() && "clinic_owner" in request.auth.token.roles;
+    }
+
+    function isValidString(value) {
+      return value is string && value.size() > 0;
+    }
+
+    function isValidUrl(value) {
+      return value is string && value.matches('^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$');
+    }
+
+    function isValidEmail(value) {
+      return value is string && value.matches('[^@]+@[^@]+\.[^@]+');
+    }
+
+    function isValidPhoneNumber(value) {
+      // Basic validation for phone numbers (e.g., +1234567890, 123-456-7890)
+      return value is string && value.matches('^\\+?[0-9\\s\\-()]{7,20}$');
+    }
+
+    function isListOfStrings(list) {
+      return list is list && list.all(elem, elem is string);
+    }
+
+    function isListOfMaps(list) {
+      return list is list && list.all(elem, elem is map);
+    }
+
+    function isTimestamp(value) {
+      return value is timestamp;
+    }
+
     // Default rule: deny all access
     match /{document=**} {
       allow read, write: if false;
@@ -8,60 +63,193 @@ service cloud.firestore {
 
     match /users/{userId} {
       // Allow authenticated users to read their own document
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
 
       // Allow authenticated users to create their own document (e.g., on first login)
-      allow create: if request.auth != null && request.auth.uid == userId &&
+      allow create: if isOwner(userId) &&
                     request.resource.data.id == userId &&
                     request.resource.data.email == request.auth.token.email &&
                     request.resource.data.roles == ["client"] && // New users are clients by default
-                    // Only allow setting these fields on creation by a new user
+                    isValidString(request.resource.data.name) &&
+                    (request.resource.data.profilePictureUrl == null || isValidUrl(request.resource.data.profilePictureUrl)) &&
+                    isTimestamp(request.resource.data.createdAt) &&
+                    isTimestamp(request.resource.data.updatedAt) &&
                     request.resource.data.keys().hasOnly([
-                        'id', 'email', 'roles', 'name', 'profilePictureUrl', 'lastLogin', 'createdAt', 'isActive'
+                        'id', 'email', 'roles', 'name', 'profilePictureUrl', 'lastLogin', 'createdAt', 'updatedAt', 'isActive'
                     ]);
 
       // Allow authenticated users to update their own document
-      allow update: if request.auth != null && request.auth.uid == userId &&
+      allow update: if isOwner(userId) &&
                     // Prevent users from changing their own roles or admin-only fields
                     !('roles' in request.resource.data) &&
                     !('isDemoAccount' in request.resource.data) &&
                     !('accountStatus' in request.resource.data) &&
                     !('adminNotes' in request.resource.data) &&
-                    // Ensure only allowed fields are updated by the user themselves
+                    // Validate updated fields
+                    (request.resource.data.name == null || isValidString(request.resource.data.name)) &&
+                    (request.resource.data.profilePictureUrl == null || isValidUrl(request.resource.data.profilePictureUrl)) &&
+                    (request.resource.data.bio == null || isValidString(request.resource.data.bio)) &&
+                    (request.resource.data.specializations == null || isListOfStrings(request.resource.data.specializations)) &&
+                    (request.resource.data.languages == null || isListOfStrings(request.resource.data.languages)) &&
+                    (request.resource.data.introVideoUrl == null || isValidUrl(request.resource.data.introVideoUrl)) &&
+                    (request.resource.data.qualifications == null || isListOfStrings(request.resource.data.qualifications)) &&
+                    (request.resource.data.whatsappNumber == null || isValidPhoneNumber(request.resource.data.whatsappNumber)) &&
+                    (request.resource.data.isVerified == null || request.resource.data.isVerified is bool) &&
+                    (request.resource.data.availability == null || isListOfStrings(request.resource.data.availability)) &&
+                    (request.resource.data.profileViews == null || request.resource.data.profileViews is number) &&
+                    (request.resource.data.likes == null || request.resource.data.likes is number) &&
+                    (request.resource.data.otherSpecializations == null || isListOfStrings(request.resource.data.otherSpecializations)) &&
+                    (request.resource.data.otherLanguages == null || isListOfStrings(request.resource.data.otherLanguages)) &&
+                    (request.resource.data.locations == null || (isListOfMaps(request.resource.data.locations) &&
+                        request.resource.data.locations.all(loc,
+                            isValidString(loc.address) &&
+                            (loc.lat == null || loc.lat is number) &&
+                            (loc.lng == null || loc.lng is number) &&
+                            (loc.isPrimary == null || loc.isPrimary is bool)
+                        )
+                    )) &&
+                    isTimestamp(request.resource.data.updatedAt) &&
                     request.resource.data.keys().hasOnly([
                         'name', 'profilePictureUrl', 'bio', 'specializations', 'languages',
-                        'lastLogin', 'membershipApplication', 'membershipRenewalDate'
+                        'lastLogin', 'membershipApplication', 'membershipRenewalDate', 'introVideoUrl',
+                        'qualifications', 'locations', 'whatsappNumber', 'isVerified', 'availability',
+                        'profileViews', 'likes', 'otherSpecializations', 'otherLanguages', 'updatedAt'
                     ]);
 
 
       // Admin: Full read/write access to all user documents
-      allow read, write: if request.auth != null && "admin" in request.auth.token.roles;
+      allow read, write: if isAdmin();
 
       // Therapist, Client, Clinic Owner: Read public profiles of therapists and clinic owners
-      // This rule allows reading of *all fields* of user documents that have 'therapist' or 'clinic_owner' roles.
-      // The client-side application is responsible for displaying only public fields.
-      allow read: if request.auth != null &&
-                     (
-                       "therapist" in request.auth.token.roles ||
-                       "client" in request.auth.token.roles ||
-                       "clinic_owner" in request.auth.token.roles
-                     ) &&
-                     resource.data.roles.hasAny(["therapist", "clinic_owner"]);
+      // This rule allows reading of *only specific public fields* of user documents that have 'therapist' or 'clinic_owner' roles.
+      allow read: if (isTherapist() || isClient() || isClinicOwner()) &&
+                     resource.data.roles.hasAny(["therapist", "clinic_owner"]) &&
+                     request.query.keys().hasOnly([
+                         'id', 'name', 'profilePictureUrl', 'introVideoUrl', 'specializations',
+                         'otherSpecializations', 'languages', 'otherLanguages', 'qualifications',
+                         'bio', 'locations', 'isVerified', 'availability', 'profileViews', 'likes',
+                         'roles' // Allow reading roles to identify if it's a therapist/clinic_owner
+                     ]);
     }
 
     match /clinics/{clinicId} {
       // Admin: Full read/write access to all clinic documents
-      allow read, write: if request.auth != null && "admin" in request.auth.token.roles;
+      allow read, write: if isAdmin();
+
+      // Clinic Owner: Create their own clinic document
+      allow create: if isClinicOwner() &&
+                    request.resource.data.id == clinicId &&
+                    request.resource.data.ownerId == request.auth.uid &&
+                    isValidString(request.resource.data.name) &&
+                    (request.resource.data.profilePictureUrl == null || isValidUrl(request.resource.data.profilePictureUrl)) &&
+                    (request.resource.data.photos == null || isListOfStrings(request.resource.data.photos)) &&
+                    (request.resource.data.amenities == null || isListOfStrings(request.resource.data.amenities)) &&
+                    (request.resource.data.operatingHours == null || request.resource.data.operatingHours is map) &&
+                    (request.resource.data.services == null || (isListOfMaps(request.resource.data.services) &&
+                        request.resource.data.services.all(service,
+                            isValidString(service.id) &&
+                            isValidString(service.name) &&
+                            service.price is number && service.price >= 0 &&
+                            (service.durationMinutes == null || (service.durationMinutes is number && service.durationMinutes > 0))
+                        )
+                    )) &&
+                    isValidString(request.resource.data.address) &&
+                    (request.resource.data.lat == null || request.resource.data.lat is number) &&
+                    (request.resource.data.lng == null || request.resource.data.lng is number) &&
+                    isValidPhoneNumber(request.resource.data.whatsappNumber) &&
+                    isValidString(request.resource.data.description) &&
+                    (request.resource.data.isVerified == null || request.resource.data.isVerified is bool) &&
+                    (request.resource.data.accountStatus == null || request.resource.data.accountStatus is string) &&
+                    (request.resource.data.adminNotes == null || isValidString(request.resource.data.adminNotes)) &&
+                    (request.resource.data.isDemoAccount == null || request.resource.data.isDemoAccount is bool);
 
       // Clinic Owner: Read/write their own clinic document
-      // Assuming clinicId is linked to the clinic owner's userId or there's a field in clinic document
-      // like 'ownerId' that matches request.auth.uid
-      allow read, write: if request.auth != null && "clinic_owner" in request.auth.token.roles &&
-                         resource.data.ownerId == request.auth.uid;
+      allow update: if isClinicOwner() && resource.data.ownerId == request.auth.uid &&
+                         // Validate clinic data on update
+                         (request.resource.data.name == null || isValidString(request.resource.data.name)) &&
+                         (request.resource.data.profilePictureUrl == null || isValidUrl(request.resource.data.profilePictureUrl)) &&
+                         (request.resource.data.photos == null || isListOfStrings(request.resource.data.photos)) &&
+                         (request.resource.data.amenities == null || isListOfStrings(request.resource.data.amenities)) &&
+                         (request.resource.data.operatingHours == null || request.resource.data.operatingHours is map) &&
+                         (request.resource.data.services == null || (isListOfMaps(request.resource.data.services) &&
+                             request.resource.data.services.all(service,
+                                 isValidString(service.id) &&
+                                 isValidString(service.name) &&
+                                 service.price is number && service.price >= 0 &&
+                                 (service.durationMinutes == null || (service.durationMinutes is number && service.durationMinutes > 0))
+                             )
+                         )) &&
+                         (request.resource.data.address == null || isValidString(request.resource.data.address)) &&
+                         (request.resource.data.lat == null || request.resource.data.lat is number) &&
+                         (request.resource.data.lng == null || request.resource.data.lng is number) &&
+                         (request.resource.data.whatsappNumber == null || isValidPhoneNumber(request.resource.data.whatsappNumber)) &&
+                         (request.resource.data.description == null || isValidString(request.resource.data.description)) &&
+                         (request.resource.data.isVerified == null || request.resource.data.isVerified is bool) &&
+                         (request.resource.data.accountStatus == null || request.resource.data.accountStatus is string) &&
+                         (request.resource.data.adminNotes == null || isValidString(request.resource.data.adminNotes)) &&
+                         (request.resource.data.isDemoAccount == null || request.resource.data.isDemoAccount is bool);
 
       // Therapists and Clients can read public clinic information
-      allow read: if request.auth != null &&
-                     ("therapist" in request.auth.token.roles || "client" in request.auth.token.roles);
+      allow read: if (isTherapist() || isClient()) &&
+                     resource.data.roles.hasAny(["therapist", "clinic_owner"]) &&
+                     request.query.keys().hasOnly([
+                         'id', 'name', 'profilePictureUrl', 'photos', 'amenities', 'operatingHours',
+                         'services', 'address', 'lat', 'lng', 'description', 'isVerified'
+                     ]);
+    }
+
+    match /clinicSpaces/{clinicSpaceId} {
+      // Admin: Full read/write access
+      allow read, write: if isAdmin();
+
+      // Clinic Owner: Create, read, update, delete their own clinic spaces
+      allow create: if isClinicOwner() &&
+                    request.resource.data.clinicId == request.auth.uid && // Assuming clinicId in clinicSpace matches ownerId
+                    isValidString(request.resource.data.name) &&
+                    isListOfStrings(request.resource.data.photos) &&
+                    isValidString(request.resource.data.description) &&
+                    request.resource.data.rentalPrice is number && request.resource.data.rentalPrice >= 0 &&
+                    isValidString(request.resource.data.rentalDuration) &&
+                    isValidString(request.resource.data.rentalTerms) &&
+                    isListOfStrings(request.resource.data.features) &&
+                    (request.resource.data.isDemoAccount == null || request.resource.data.isDemoAccount is bool);
+
+      allow update, delete: if isClinicOwner() &&
+                            resource.data.clinicId == request.auth.uid;
+
+      // Therapists and Clients can read public clinic space listings
+      allow read: if (isTherapist() || isClient()) &&
+                     request.query.keys().hasOnly([
+                         'id', 'name', 'photos', 'description', 'rentalPrice', 'rentalDuration',
+                         'rentalTerms', 'features', 'clinicId', 'clinicName', 'clinicAddress'
+                     ]);
+    }
+
+    match /userInquiries/{inquiryId} {
+      // Admin: Full read/write access
+      allow read, write: if isAdmin();
+
+      // Authenticated users can create their own inquiries
+      allow create: if isSignedIn() &&
+                    request.resource.data.userId == request.auth.uid &&
+                    isValidString(request.resource.data.userEmail) &&
+                    isValidString(request.resource.data.subject) &&
+                    isValidString(request.resource.data.message) &&
+                    isTimestamp(request.resource.data.date) &&
+                    request.resource.data.status == 'open' &&
+                    (request.resource.data.userName == null || isValidString(request.resource.data.userName)) &&
+                    (request.resource.data.priority == null || isValidString(request.resource.data.priority)) &&
+                    (request.resource.data.category == null || isValidString(request.resource.data.category));
+
+      // Users can read their own inquiries
+      allow read: if isOwner(resource.data.userId);
+
+      // Users can update their own inquiries (e.g., status change, adding details)
+      allow update: if isOwner(resource.data.userId) &&
+                            (request.resource.data.status == null || isValidString(request.resource.data.status)) &&
+                            (request.resource.data.adminReply == null || isValidString(request.resource.data.adminReply)) &&
+                            (request.resource.data.priority == null || isValidString(request.resource.data.priority)) &&
+                            (request.resource.data.category == null || isValidString(request.resource.data.category));
     }
   }
 }

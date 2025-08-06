@@ -15,14 +15,16 @@
     "validate-firestore": "node scripts/validateFirestore.js",
     "generate-security-rules": "node scripts/generateSecurityRules.js",
     "migrate-data": "node scripts/migrateData.js",
-    "monitor-firestore": "node scripts/monitorFirestore.js"
+    "monitor-firestore": "node scripts/monitorFirestore.js",
+    "full-seed": "node scripts/fullSeed.js"
   },
   "dependencies": {
+    "@firebase/data-connect": "^1.0.0",
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
     "@fortawesome/fontawesome-free": "^6.5.2",
     "@tanstack/react-query": "^5.51.1",
     "esbuild": "^0.25.6",
-    "firebase": "^10.12.2",
+    "firebase": "^11.3.0",
     "firebase-admin": "^13.4.0",
     "leaflet": "^1.9.4",
     "react": "^18.2.0",
@@ -40,7 +42,7 @@
     "dotenv": "^17.2.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.2.0",
+    "typescript": "^5.9.2",
     "vite": "^7.0.6",
     "vite-plugin-pwa": "^1.0.2"
   }

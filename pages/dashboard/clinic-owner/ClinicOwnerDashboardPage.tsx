@@ -14,16 +14,16 @@ import {
     CLINIC_MEMBERSHIP_FEE,
     STANDARD_MEMBERSHIP_TIER_NAME
 } from '../../../constants';
-import { DashboardLayout } from '../../components/dashboard/shared/DashboardLayout';
-import { Button } from '../../components/common/Button';
-import { InputField, TextareaField, FileUploadField, SelectField, CheckboxField, uploadFileToFirebase, deleteFileFromFirebase } from '../../components/dashboard/shared/FormElements';
-import { Modal } from '../../components/common/Modal';
+import { DashboardLayout } from '../../../components/dashboard/shared/DashboardLayout';
+import { Button } from '../../../components/common/Button';
+import { InputField, TextareaField, FileUploadField, SelectField, CheckboxField, uploadFileToFirebase, deleteFileFromFirebase } from '../../../components/dashboard/shared/FormElements';
+import { Modal } from '../../../components/common/Modal';
 import { 
     BuildingOfficeIcon, BriefcaseIcon, CogIcon, PhotoIcon, 
     PlusCircleIcon, PencilIcon, TrashIcon, ArrowUpOnSquareIcon, CheckCircleIcon,
     ChevronDownIcon, ChevronUpIcon, UsersIcon, DocumentDuplicateIcon, MapPinIcon, ClockIcon, InformationCircleIcon
-} from '../../components/icons';
-import { db } from '../../firebase';
+} from '../../../components/icons';
+import { db } from '../../../firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc, Timestamp, orderBy } from 'firebase/firestore';
 
 
@@ -218,7 +218,7 @@ const ClinicProfileTabContent: React.FC = () => {
                              <FileUploadField
                                 label={`${t('photoLabel')} ${index + 1}`} id={`additionalPhoto-${index}`}
                                 currentFileUrl={ (preview && !preview.startsWith('blob:')) ? preview : undefined } // Pass original server URL if preview is not a blob
-                                onFileChange={(file) => handleAdditionalPhotoChange(index, file)}
+                                onFileChange={(file: File | null) => handleAdditionalPhotoChange(index, file)}
                                 accept="image/*" maxSizeMB={CLINIC_PHOTO_MAX_SIZE_MB}
                                 containerClassName="!mb-0"
                             />
@@ -376,7 +376,7 @@ const ClinicMySpacesTabContent: React.FC = () => {
                                         key={index}
                                         label={`${t('photoLabel')} ${index + 1}`} id={`photo-${index}`}
                                         currentFileUrl={photoPreviews[index] && !photoPreviews[index]?.startsWith('blob:') ? photoPreviews[index] : undefined}
-                                        onFileChange={(file) => handlePhotoFileChange(index, file)}
+                                        onFileChange={(file: File | null) => handlePhotoFileChange(index, file)}
                                         accept="image/*" maxSizeMB={CLINIC_SPACE_PHOTO_MAX_SIZE_MB}
                                         containerClassName="!mb-0"
                                     />
@@ -645,12 +645,12 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             // Fetch Clinic Spaces for this clinic
             const spacesQuery = query(collection(db, 'clinicSpaces'), where('clinicId', '==', currentClinicData.id));
             const spacesSnapshot = await getDocs(spacesQuery);
-            setClinicSpaceListings(spacesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as ClinicSpaceListing)));
+            setClinicSpaceListings(spacesSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ClinicSpaceListing)));
             
             // Fetch membership history
             const historyCollectionRef = collection(db, `clinicsData/${currentClinicData.id}/membershipHistory`);
             const historyQuerySnapshot = await getDocs(query(historyCollectionRef, orderBy("date", "desc"))); 
-            setMembershipHistory(historyQuerySnapshot.docs.map(d => ({id: d.id, ...d.data()} as MembershipHistoryItem)));
+            setMembershipHistory(historyQuerySnapshot.docs.map((d: any) => ({id: d.id, ...d.data()} as MembershipHistoryItem)));
 
 
         } catch (error) {
@@ -684,10 +684,10 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             if (profilePicFile) {
                 const filePath = `clinic_profiles/${clinicData.id}/profile_picture/${profilePicFile.name}-${Date.now()}`;
                 dataToSave.profilePictureUrl = await uploadFileToFirebase(profilePicFile, filePath);
-                 if(oldProfilePicUrl && oldProfilePicUrl !== dataToSave.profilePictureUrl) await deleteFileFromFirebase(oldProfilePicUrl).catch(e=>console.warn("Old clinic profile pic delete failed",e));
+                 if(oldProfilePicUrl && oldProfilePicUrl !== dataToSave.profilePictureUrl) await deleteFileFromFirebase(oldProfilePicUrl).catch((e: any)=>console.warn("Old clinic profile pic delete failed",e));
             } else if (updatedProfile.profilePictureUrl === null && oldProfilePicUrl) { 
-                 await deleteFileFromFirebase(oldProfilePicUrl).catch(e=>console.warn("Clinic profile pic delete failed",e));
-                 dataToSave.profilePictureUrl = null; // Ensure it's set to null in Firestore
+                 await deleteFileFromFirebase(oldProfilePicUrl).catch((e: any)=>console.warn("Clinic profile pic delete failed",e));
+                 dataToSave.profilePictureUrl = undefined;
             }
 
 
@@ -704,14 +704,14 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
                         const uploadedUrl = await uploadFileToFirebase(newFile, filePath);
                         finalPhotoUrls.push(uploadedUrl);
                         if (originalUrlInSlot && originalUrlInSlot !== uploadedUrl) {
-                            await deleteFileFromFirebase(originalUrlInSlot).catch(e => console.warn("Old additional photo (replaced) delete failed", e));
+                            await deleteFileFromFirebase(originalUrlInSlot).catch((e: any) => console.warn("Old additional photo (replaced) delete failed", e));
                         }
                     } else if (previewUrl && !previewUrl.startsWith('blob:') && originalServerPhotos.includes(previewUrl)) {
                         // No new file, and the preview is an existing server URL that was part of originalPhotos: keep it
                         finalPhotoUrls.push(previewUrl);
                     } else if (originalUrlInSlot && !previewUrl) {
                         // An existing server URL was there, but preview is now null (meaning user cleared it in UI)
-                        await deleteFileFromFirebase(originalUrlInSlot).catch(e => console.warn("Old additional photo (cleared) delete failed", e));
+                        await deleteFileFromFirebase(originalUrlInSlot).catch((e: any) => console.warn("Old additional photo (cleared) delete failed", e));
                     }
                 }
             }
@@ -724,7 +724,7 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
                     // It should have been handled by the loop above if it was cleared or replaced.
                     // This is a safeguard but might be redundant if the loop is perfect.
                     // Could be useful if array was shortened.
-                     await deleteFileFromFirebase(oldUrl).catch(e => console.warn("Old additional photo (fallback delete) failed", e));
+                     await deleteFileFromFirebase(oldUrl).catch((e: any) => console.warn("Old additional photo (fallback delete) failed", e));
                 }
             });
 
@@ -749,7 +749,7 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             if (receiptFile) {
                 const filePath = `clinic_payment_receipts/${clinicData.id}/${receiptFile.name}-${Date.now()}`;
                 paymentReceiptUrl = await uploadFileToFirebase(receiptFile, filePath);
-                if (oldReceiptUrl && oldReceiptUrl !== paymentReceiptUrl) await deleteFileFromFirebase(oldReceiptUrl).catch(e=>console.warn("Old clinic receipt delete failed",e));
+                if (oldReceiptUrl && oldReceiptUrl !== paymentReceiptUrl) await deleteFileFromFirebase(oldReceiptUrl).catch((e: any)=>console.warn("Old clinic receipt delete failed",e));
             }
             if (!paymentReceiptUrl) {
                 alert(t('paymentReceiptRequiredError')); setIsLoading(false); return;
@@ -820,14 +820,14 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
                     const uploadedUrl = await uploadFileToFirebase(newFile, filePath);
                     finalPhotoUrls.push(uploadedUrl);
                     if (originalUrlInSlot && originalUrlInSlot !== uploadedUrl) {
-                        await deleteFileFromFirebase(originalUrlInSlot).catch(e => console.warn("Old space photo (replaced) delete failed", e));
+                        await deleteFileFromFirebase(originalUrlInSlot).catch((e: any) => console.warn("Old space photo (replaced) delete failed", e));
                     }
                 } else if (originalUrlInSlot && listing.photos?.includes(originalUrlInSlot)) { 
                     // No new file, and original URL was part of the submitted listing's photos (meaning it wasn't cleared in UI)
                     finalPhotoUrls.push(originalUrlInSlot);
                 } else if (originalUrlInSlot && (!listing.photos || !listing.photos.includes(originalUrlInSlot))) {
                     // Original URL existed, but it's not in the submitted listing.photos (meaning it was cleared)
-                    await deleteFileFromFirebase(originalUrlInSlot).catch(e => console.warn("Old space photo (cleared) delete failed", e));
+                    await deleteFileFromFirebase(originalUrlInSlot).catch((e: any) => console.warn("Old space photo (cleared) delete failed", e));
                 }
             }
             listingToSave.photos = finalPhotoUrls;
@@ -855,7 +855,7 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             const listingToDelete = clinicSpaceListings.find(l => l.id === listingId);
             if (listingToDelete?.photos) {
                 for (const photoUrl of listingToDelete.photos) {
-                    await deleteFileFromFirebase(photoUrl).catch(e => console.warn("Space photo delete during listing delete failed", e));
+                    await deleteFileFromFirebase(photoUrl).catch((e: any) => console.warn("Space photo delete during listing delete failed", e));
                 }
             }
             await deleteDoc(doc(db, 'clinicSpaces', listingId));

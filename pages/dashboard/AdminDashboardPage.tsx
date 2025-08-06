@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import * as ReactRouterDOM from 'react-router-dom';
+import { Outlet, Route, Routes, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -15,7 +14,7 @@ import {
     CogIcon, TrashIcon
 } from '../../components/icons';
 import { db } from '../../firebase';
-import { collection, doc, getDocs, updateDoc, setDoc, query, orderBy, serverTimestamp, Timestamp, writeBatch, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc, Timestamp, orderBy, writeBatch, WriteBatch } from 'firebase/firestore';
 
 
 interface OutletContextType {
@@ -53,7 +52,7 @@ const AddNoteModal: React.FC<AddNoteModalProps> = ({ isOpen, onClose, onSave, cu
                 label={t('adminNoteLabel')}
                 id="adminNote"
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNote(e.target.value)}
                 rows={4}
                 placeholder={t('adminNotePlaceholder')}
             />
@@ -109,7 +108,7 @@ const RespondToInquiryModal: React.FC<RespondToInquiryModalProps> = ({ isOpen, o
                 label={t('yourReplyLabel')}
                 id="adminReply"
                 value={reply}
-                onChange={(e) => setReply(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReply(e.target.value)}
                 rows={5}
                 placeholder={t('typeYourReplyPlaceholder')}
             />
@@ -125,7 +124,7 @@ const RespondToInquiryModal: React.FC<RespondToInquiryModalProps> = ({ isOpen, o
 const AdminTherapistsValidationTabContent: React.FC = () => {
     usePageTitle('dashboardTherapistsValidationTab');
     const { t, direction } = useTranslation();
-    const { therapistsList, handleTherapistStatusChange, isLoading, addActivityLogEntry } = ReactRouterDOM.useOutletContext<OutletContextType>();
+    const { therapistsList, handleTherapistStatusChange, isLoading, addActivityLogEntry } = useOutletContext<OutletContextType>();
     const [searchTerm, setSearchTerm] = useState('');
     const [noteModalOpen, setNoteModalOpen] = useState(false);
     const [selectedTarget, setSelectedTarget] = useState<{id: string; name: string; currentNotes?: string} | null>(null);
@@ -197,7 +196,7 @@ const AdminTherapistsValidationTabContent: React.FC = () => {
                         id="therapistSearch"
                         placeholder={t('searchTherapistsPlaceholder')}
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                         containerClassName="!mb-0"
                     />
                     <Button variant="light" size="sm" onClick={handleExportData} leftIcon={<ArrowDownTrayIcon />} >{t('exportButtonLabel')}</Button>
@@ -273,7 +272,7 @@ const AdminTherapistsValidationTabContent: React.FC = () => {
 const AdminClinicApprovalTabContent: React.FC = () => {
     usePageTitle('dashboardClinicApprovalTab');
     const { t, direction } = useTranslation();
-    const { clinicsList, handleClinicStatusChange, isLoading, addActivityLogEntry } = ReactRouterDOM.useOutletContext<OutletContextType>();
+    const { clinicsList, handleClinicStatusChange, isLoading, addActivityLogEntry } = useOutletContext<OutletContextType>();
     const [searchTerm, setSearchTerm] = useState('');
     const [noteModalOpen, setNoteModalOpen] = useState(false);
     const [selectedTarget, setSelectedTarget] = useState<{id: string; name: string; currentNotes?: string} | null>(null);
@@ -338,7 +337,7 @@ const AdminClinicApprovalTabContent: React.FC = () => {
                     id="clinicSearch"
                     placeholder={t('searchClinicsPlaceholder')}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                     containerClassName="!mb-0"
                 />
             </div>
@@ -401,7 +400,7 @@ const AdminClinicApprovalTabContent: React.FC = () => {
 const AdminCommunicationTabContent: React.FC = () => {
     usePageTitle('dashboardCommunicationTab');
     const { t } = useTranslation();
-    const { userInquiriesList, handleInquiryStatusChange, isLoading } = ReactRouterDOM.useOutletContext<OutletContextType>();
+    const { userInquiriesList, handleInquiryStatusChange, isLoading } = useOutletContext<OutletContextType>();
     const [viewMessageModalOpen, setViewMessageModalOpen] = useState(false);
     const [respondModalOpen, setRespondModalOpen] = useState(false);
     const [selectedInquiry, setSelectedInquiry] = useState<UserInquiry | null>(null);
@@ -470,7 +469,7 @@ const AdminCommunicationTabContent: React.FC = () => {
 const AdminActivityLogTabContent: React.FC = () => {
     usePageTitle('dashboardActivityLogTab');
     const { t } = useTranslation();
-    const { activityLogsList, isLoading } = ReactRouterDOM.useOutletContext<OutletContextType>();
+    const { activityLogsList, isLoading } = useOutletContext<OutletContextType>();
     
     return (
         <div className="space-y-6 bg-primary p-4 sm:p-6 rounded-lg shadow-md text-textOnLight">
@@ -478,7 +477,7 @@ const AdminActivityLogTabContent: React.FC = () => {
                 <DocumentTextIcon className="w-6 h-6 mr-2"/>
                 {t('systemActivityLog')}
             </h3>
-            {isLoading && activityLogsList.length === 0 ? <p>{t('loading')}</p> :
+            {isLoading && activityLogsList.length === 0 ? <p>{t('loading')}...</p> :
                 activityLogsList.length > 0 ? (
                     <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -511,7 +510,7 @@ const AdminActivityLogTabContent: React.FC = () => {
 const AdminSiteManagementTabContent: React.FC = () => {
     usePageTitle('dashboardSiteManagementTab');
     const { t } = useTranslation();
-    const { addActivityLogEntry, isLoading, fetchData } = ReactRouterDOM.useOutletContext<OutletContextType>();
+    const { addActivityLogEntry, isLoading, fetchData } = useOutletContext<OutletContextType>();
     const [isCleaning, setIsCleaning] = useState(false);
     
     const handleClearDemoData = async () => {
@@ -522,7 +521,7 @@ const AdminSiteManagementTabContent: React.FC = () => {
         console.log('Clearing demo data...');
     
         try {
-            const batch = writeBatch(db);
+            const batch: WriteBatch = writeBatch(db);
             let count = 0;
 
             const collectionsToClean = ['users', 'therapistsData', 'clinicsData', 'clinicSpaces'];
@@ -530,7 +529,7 @@ const AdminSiteManagementTabContent: React.FC = () => {
             for (const collectionName of collectionsToClean) {
                 const q = query(collection(db, collectionName), where('isDemoAccount', '==', true));
                 const snapshot = await getDocs(q);
-                snapshot.forEach(docSnap => {
+                snapshot.forEach((docSnap: any) => {
                     batch.delete(docSnap.ref);
                     count++;
                 });
@@ -582,16 +581,16 @@ const AdminDashboardPageShell: React.FC = () => {
         setIsLoading(true);
         try {
             const therapistsSnapshot = await getDocs(collection(db, 'therapistsData'));
-            setTherapistsList(therapistsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Therapist)));
+            setTherapistsList(therapistsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Therapist)));
 
             const clinicsSnapshot = await getDocs(collection(db, 'clinicsData'));
-            setClinicsList(clinicsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic)));
+            setClinicsList(clinicsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Clinic)));
 
             const inquiriesSnapshot = await getDocs(query(collection(db, 'userInquiries'), orderBy('date', 'desc')));
-            setUserInquiriesList(inquiriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserInquiry)));
+            setUserInquiriesList(inquiriesSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as UserInquiry)));
 
             const activityLogsSnapshot = await getDocs(query(collection(db, 'activityLog'), orderBy('timestamp', 'desc')));
-            setActivityLogsList(activityLogsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog)));
+            setActivityLogsList(activityLogsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as ActivityLog)));
         } catch (error) {
             console.error("Error fetching admin data:", error);
         } finally {
@@ -695,19 +694,19 @@ const AdminDashboardPageShell: React.FC = () => {
 
     return (
         <DashboardLayout role={UserRole.ADMIN}>
-            <ReactRouterDOM.Outlet context={outletContextValue} />
+            <Outlet context={outletContextValue} />
         </DashboardLayout>
     );
 };
 
 export const AdminDashboardRoutes = () => (
-    <ReactRouterDOM.Routes>
-        <ReactRouterDOM.Route element={<AdminDashboardPageShell />}>
-            <ReactRouterDOM.Route index element={<AdminTherapistsValidationTabContent />} />
-            <ReactRouterDOM.Route path="clinic-approval" element={<AdminClinicApprovalTabContent />} />
-            <ReactRouterDOM.Route path="communication" element={<AdminCommunicationTabContent />} />
-            <ReactRouterDOM.Route path="activity-log" element={<AdminActivityLogTabContent />} />
-            <ReactRouterDOM.Route path="site-management" element={<AdminSiteManagementTabContent />} />
-        </ReactRouterDOM.Route>
-    </ReactRouterDOM.Routes>
+    <Routes>
+        <Route element={<AdminDashboardPageShell />}>
+            <Route index element={<AdminTherapistsValidationTabContent />} />
+            <Route path="clinic-approval" element={<AdminClinicApprovalTabContent />} />
+            <Route path="communication" element={<AdminCommunicationTabContent />} />
+            <Route path="activity-log" element={<AdminActivityLogTabContent />} />
+            <Route path="site-management" element={<AdminSiteManagementTabContent />} />
+        </Route>
+    </Routes>
 );

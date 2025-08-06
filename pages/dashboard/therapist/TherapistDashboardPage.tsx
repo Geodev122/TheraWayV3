@@ -1,9 +1,9 @@
 import React, { useState, useEffect, FormEvent, useMemo, useCallback } from 'react';
 import { Outlet, Route, Routes, useOutletContext } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { useTranslation } from '../../hooks/useTranslation';
-import { usePageTitle } from '../../hooks/usePageTitle';
-import { Therapist, UserRole, Certification, ClinicSpaceListing, Clinic, PracticeLocation, MembershipHistoryItem } from '../../types'; 
+import { useAuth } from '../../../contexts/AuthContext';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { usePageTitle } from '../../../hooks/usePageTitle';
+import { Therapist, UserRole, Certification, ClinicSpaceListing, Clinic, PracticeLocation, MembershipHistoryItem } from '../../../types'; 
 import { 
     CERTIFICATION_MAX_SIZE_MB, 
     THERAPIST_MEMBERSHIP_FEE,
@@ -15,21 +15,21 @@ import {
     PROFILE_PICTURE_MAX_SIZE_MB,
     STANDARD_MEMBERSHIP_TIER_NAME, 
     PAYMENT_RECEIPT_MAX_SIZE_MB 
-} from '../../constants'; 
-import { DashboardLayout } from '../../components/dashboard/shared/DashboardLayout';
+} from '../../../constants'; 
+import { DashboardLayout } from '../../../components/dashboard/shared/DashboardLayout';
 import { 
     DocumentDuplicateIcon, CogIcon, BriefcaseIcon, BuildingOfficeIcon,
     ArrowUpOnSquareIcon, CheckCircleIcon, ExclamationTriangleIcon, XIcon, UsersIcon,
     TableCellsIcon, MapIcon, ListBulletIcon, FilterSolidIcon, InformationCircleIcon, PhotoIcon,
     ChevronDownIcon, ChevronUpIcon, TrashIcon, UserCircleIcon, MapPinIcon, VideoCameraIcon, WhatsAppIcon, ClockIcon
-} from '../../components/icons';
-import { Button } from '../../components/common/Button';
-import { FileUploadField, InputField, CheckboxField, SelectField, TextareaField, uploadFileToFirebase, deleteFileFromFirebase } from '../../components/dashboard/shared/FormElements'; 
-import { Modal } from '../../components/common/Modal';
-import { ClinicSpaceCard } from '../../components/therapist-finder/ClinicSpaceCard';
-import { ClinicSpaceDetailModal } from '../../components/therapist-finder/ClinicSpaceDetailModal';
-import { db } from '../../firebase';
-import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, Timestamp, orderBy } from 'firebase/firestore';
+} from '../../../components/icons';
+import { Button } from '../../../components/common/Button';
+import { FileUploadField, InputField, CheckboxField, SelectField, TextareaField, uploadFileToFirebase, deleteFileFromFirebase } from '../../../components/dashboard/shared/FormElements'; 
+import { Modal } from '../../../components/common/Modal';
+import { ClinicSpaceCard } from '../../../components/therapist-finder/ClinicSpaceCard';
+import { ClinicSpaceDetailModal } from '../../../components/therapist-finder/ClinicSpaceDetailModal';
+import { db } from '../../../firebase';
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc, Timestamp, orderBy } from 'firebase/firestore';
 
 
 interface OutletContextType {
@@ -113,14 +113,14 @@ const TherapistProfileTabContent: React.FC = () => {
         const { name, value, type } = e.target;
         if (type === 'checkbox') {
             const { checked } = e.target as HTMLInputElement;
-            setFormData(prev => ({ ...prev, [name]: checked }));
+            setFormData((prev: Partial<Therapist>) => ({ ...prev, [name]: checked }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData((prev: Partial<Therapist>) => ({ ...prev, [name]: value }));
         }
     };
 
     const handleMultiSelectChange = (name: keyof Therapist, selectedOptions: string[]) => {
-        setFormData(prev => ({ ...prev, [name]: selectedOptions }));
+        setFormData((prev: Partial<Therapist>) => ({ ...prev, [name]: selectedOptions }));
     };
     
     const handleSpecializationsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -135,7 +135,7 @@ const TherapistProfileTabContent: React.FC = () => {
     
     const handleQualificationsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
          const qualificationsArray = e.target.value.split('\n').map(q => q.trim()).filter(q => q);
-         setFormData(prev => ({ ...prev, qualifications: qualificationsArray }));
+         setFormData((prev: Partial<Therapist>) => ({ ...prev, qualifications: qualificationsArray }));
     };
 
     const handleLocationChange = (index: number, field: keyof PracticeLocation, value: string | boolean) => {
@@ -151,20 +151,20 @@ const TherapistProfileTabContent: React.FC = () => {
                 if (i !== index) loc.isPrimary = false;
             });
         }
-        setFormData(prev => ({ ...prev, locations: newLocations }));
+        setFormData((prev: Partial<Therapist>) => ({ ...prev, locations: newLocations }));
     };
 
     const addLocation = () => {
-        const newLocations = [...(formData.locations || []), { ...initialLocationState, isPrimary: !(formData.locations || []).some(l => l.isPrimary) }];
-        setFormData(prev => ({ ...prev, locations: newLocations }));
+        const newLocations = [...(formData.locations || []), { ...initialLocationState, isPrimary: !(formData.locations || []).some((l: any) => l.isPrimary) }];
+        setFormData((prev: Partial<Therapist>) => ({ ...prev, locations: newLocations }));
     };
 
     const removeLocation = (index: number) => {
-        const newLocations = (formData.locations || []).filter((_, i) => i !== index);
-        if (!newLocations.some(loc => loc.isPrimary) && newLocations.length > 0) {
+        const newLocations = (formData.locations || []).filter((_: any, i: number) => i !== index);
+        if (!newLocations.some((loc: any) => loc.isPrimary) && newLocations.length > 0) {
             newLocations[0].isPrimary = true;
         }
-        setFormData(prev => ({ ...prev, locations: newLocations }));
+        setFormData((prev: Partial<Therapist>) => ({ ...prev, locations: newLocations }));
     };
   
     const handleSubmit = async (e: FormEvent) => {
@@ -255,12 +255,12 @@ const TherapistProfileTabContent: React.FC = () => {
                         onChange={handleSpecializationsChange}
                         className="mt-1 block w-full h-40 px-3 py-2 border border-gray-300 bg-primary text-textOnLight rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent sm:text-sm"
                     >
-                        {SPECIALIZATIONS_LIST.map(spec => <option key={spec} value={spec}>{spec}</option>)}
+                        {SPECIALIZATIONS_LIST.map((spec: string) => <option key={spec} value={spec}>{spec}</option>)}
                     </select>
                     <p className="mt-1 text-xs text-gray-500">{t('multiSelectHint')}</p>
                 </div>
                 {formData.specializations?.includes('Other') && (
-                    <InputField label={t('otherSpecializationsLabel')} id="otherSpecializations" name="otherSpecializations" value={otherSpecializationsText} onChange={e => setOtherSpecializationsText(e.target.value)} description={t('otherSpecializationsHint')} />
+                    <InputField label={t('otherSpecializationsLabel')} id="otherSpecializations" name="otherSpecializations" value={otherSpecializationsText} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtherSpecializationsText(e.target.value)} description={t('otherSpecializationsHint')} />
                 )}
 
                 <div className="mb-4">
@@ -273,12 +273,12 @@ const TherapistProfileTabContent: React.FC = () => {
                         onChange={handleLanguagesChange}
                         className="mt-1 block w-full h-32 px-3 py-2 border border-gray-300 bg-primary text-textOnLight rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent sm:text-sm"
                     >
-                        {LANGUAGES_LIST.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                        {LANGUAGES_LIST.map((lang: string) => <option key={lang} value={lang}>{lang}</option>)}
                     </select>
                     <p className="mt-1 text-xs text-gray-500">{t('multiSelectHint')}</p>
-                </div>
+                }
                  {formData.languages?.includes('Other') && (
-                    <InputField label={t('otherLanguagesLabel')} id="otherLanguages" name="otherLanguages" value={otherLanguagesText} onChange={e => setOtherLanguagesText(e.target.value)} description={t('otherLanguagesHint')} />
+                    <InputField label={t('otherLanguagesLabel')} id="otherLanguages" name="otherLanguages" value={otherLanguagesText} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtherLanguagesText(e.target.value)} description={t('otherLanguagesHint')} />
                 )}
 
                 <TextareaField label={t('qualificationsCredentials')} id="qualifications" name="qualifications" 
@@ -293,7 +293,7 @@ const TherapistProfileTabContent: React.FC = () => {
                 isOpen={activeProfileAccordionSection === 'locations'}
                 onClick={() => toggleProfileAccordion('locations')}
             >
-                {(formData.locations || []).map((loc, index) => (
+                {(formData.locations || []).map((loc: PracticeLocation, index: number) => (
                     <div key={index} className="p-4 border border-gray-200 rounded-md mb-4 relative bg-gray-50/50">
                         <InputField 
                         label={`${t('location', {default: 'Location'})} ${index + 1} ${t('address', {default: 'Address'})}`}
@@ -335,183 +335,6 @@ const TherapistProfileTabContent: React.FC = () => {
         </form>
     );
 };
-
-// ... other tab components remain the same ...
-// ...
-const TherapistSettingsTabContent: React.FC = () => {
-    usePageTitle('dashboardSettingsTab');
-    const { t } = useTranslation();
-    const { therapistData, userAccountData, handleAccountSave, handleMembershipApplication, isLoading, membershipHistory } = useOutletContext<OutletContextType>();
-
-    const [accountData, setAccountData] = useState(userAccountData || { name: '', email: '' });
-    const [paymentReceiptFile, setPaymentReceiptFile] = useState<File | null>(null);
-    const [paymentReceiptPreview, setPaymentReceiptPreview] = useState<string | null>(null);
-    const [activeSettingsAccordionSection, setActiveSettingsAccordionSection] = useState<string | null>('accountInfo');
-
-    useEffect(() => {
-        setAccountData(userAccountData || { name: '', email: '' });
-    }, [userAccountData]);
-    
-    useEffect(() => { // For existing receipt preview
-        if (therapistData?.membershipApplication?.paymentReceiptUrl) {
-            setPaymentReceiptPreview(therapistData.membershipApplication.paymentReceiptUrl);
-        }
-    }, [therapistData?.membershipApplication?.paymentReceiptUrl]);
-
-    const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setAccountData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
-
-    const handleAccountSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        await handleAccountSave(accountData);
-    };
-    
-    const handleMembershipSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!paymentReceiptFile && !therapistData?.membershipApplication?.paymentReceiptUrl) {
-             alert(t('paymentReceiptRequiredError', { default: 'Payment receipt is required.' }));
-            return;
-        }
-        await handleMembershipApplication(paymentReceiptFile);
-        setPaymentReceiptFile(null); 
-        setPaymentReceiptPreview(null); // Clear preview after submit, new URL will come from therapistData
-        const receiptInput = document.getElementById('therapistPaymentReceiptFile') as HTMLInputElement;
-        if(receiptInput) receiptInput.value = "";
-    };
-    
-    const handlePaymentReceiptFileChange = (file: File | null) => {
-        setPaymentReceiptFile(file);
-        if(file) {
-            const reader = new FileReader();
-            reader.onloadend = () => setPaymentReceiptPreview(reader.result as string);
-            reader.readAsDataURL(file);
-        } else {
-            // Revert to original if file is cleared and an original existed
-            setPaymentReceiptPreview(therapistData?.membershipApplication?.paymentReceiptUrl || null);
-        }
-    };
-
-    const getAccountStatusPill = (status: Therapist['accountStatus'] | undefined) => {
-        if (!status) return null;
-        let colorClasses = 'bg-gray-100 text-gray-800';
-        let textKey = `therapistAccountStatus${status.charAt(0).toUpperCase() + status.slice(1).replace('_', '')}`;
-        
-        switch (status) {
-            case 'live': colorClasses = 'bg-green-100 text-green-700'; break;
-            case 'pending_approval': colorClasses = 'bg-yellow-100 text-yellow-700'; break;
-            case 'rejected': colorClasses = 'bg-red-100 text-red-700'; break;
-            case 'draft': colorClasses = 'bg-blue-100 text-blue-700'; break;
-        }
-        return <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${colorClasses}`}>{t(textKey, {default: status})}</span>;
-    };
-
-    const needsMembershipAction = !therapistData?.membershipRenewalDate || new Date(therapistData.membershipRenewalDate) < new Date() || therapistData.accountStatus === 'rejected' || therapistData.accountStatus === 'draft';
-
-    const toggleSettingsAccordion = (sectionName: string) => {
-        setActiveSettingsAccordionSection(activeSettingsAccordionSection === sectionName ? null : sectionName);
-    };
-
-    return (
-        <div className="bg-primary p-0 sm:p-6 rounded-lg shadow text-textOnLight space-y-3">
-            {/* Account Status Info Box for Transparency */}
-            <div className="p-4 border border-accent/20 bg-accent/5 rounded-lg">
-                <h4 className="font-semibold text-accent text-lg mb-2">{t('accountStatusLabel')}</h4>
-                <div className="flex items-center gap-3 mb-2">
-                    <span className="font-bold text-lg">{getAccountStatusPill(therapistData?.accountStatus)}</span>
-                </div>
-                 {therapistData?.accountStatus === 'rejected' && therapistData.adminNotes && (
-                    <div className="mt-2 p-3 bg-red-100/50 border border-red-200 rounded-md">
-                         <p className="text-sm font-semibold text-red-800">{t('adminNotesLabel')}:</p>
-                         <p className="text-sm text-red-700 mt-1">{therapistData.adminNotes}</p>
-                    </div>
-                )}
-                 {therapistData?.accountStatus === 'pending_approval' && therapistData.membershipApplication?.statusMessage && (
-                    <p className="text-sm text-yellow-700 mt-1">{t('applicationStatusMessageLabel', {default: 'Application Status:'})} {therapistData.membershipApplication.statusMessage}</p>
-                )}
-                 {therapistData?.accountStatus === 'live' && therapistData.membershipRenewalDate && (
-                    <p className="text-sm text-green-700 mt-1">{t('renewalDateLabel')}: {new Date(therapistData.membershipRenewalDate).toLocaleDateString()}</p>
-                 )}
-            </div>
-
-            <AccordionSection 
-                titleKey="dashboardAccountInformationTitle" 
-                icon={<UsersIcon />}
-                isOpen={activeSettingsAccordionSection === 'accountInfo'}
-                onClick={() => toggleSettingsAccordion('accountInfo')}
-            >
-                <form onSubmit={handleAccountSubmit} className="space-y-4">
-                    <InputField label={t('fullName')} id="name" name="name" value={accountData.name} onChange={handleAccountChange} />
-                    <InputField label={t('emailAddress')} id="email" name="email" type="email" value={accountData.email} onChange={handleAccountChange} 
-                     disabled // Email change in Firebase is complex and needs re-auth.
-                     description={t('emailChangeDisabledNote', { default: 'Changing email requires re-authentication and is currently disabled here.'})}
-                    />
-                    <Button type="submit" disabled={isLoading}>{isLoading ? t('saving') : t('saveChangesButtonLabel')}</Button>
-                </form>
-            </AccordionSection>
-
-            <AccordionSection 
-                titleKey="membershipManagementTitle" 
-                icon={<CheckCircleIcon />}
-                isOpen={activeSettingsAccordionSection === 'membership'}
-                onClick={() => toggleSettingsAccordion('membership')}
-            >
-                {needsMembershipAction ? (
-                     <form onSubmit={handleMembershipSubmit} className="mt-4 pt-4 border-t border-dashed border-gray-200 space-y-3">
-                         <h5 className="font-medium text-textOnLight">
-                            {therapistData?.accountStatus === 'rejected' ? t('resubmitApplicationTitle', {default: 'Resubmit Membership Application'}) :
-                             (therapistData?.membershipRenewalDate && new Date(therapistData.membershipRenewalDate) < new Date() ? t('renewMembershipTitle', {default: 'Renew Your Membership'}) :
-                             t('applyForMembershipTitle', {default: 'Apply for Membership'}))
-                            } ({t('therapistMembershipFeeLabel', {price: THERAPIST_MEMBERSHIP_FEE})})
-                        </h5>
-                        <FileUploadField 
-                            label={t('attachPaymentReceiptLabel')} 
-                            id="therapistPaymentReceiptFile"
-                            onFileChange={handlePaymentReceiptFileChange}
-                            currentFileUrl={paymentReceiptPreview} // Use state for preview consistency
-                            maxSizeMB={PAYMENT_RECEIPT_MAX_SIZE_MB}
-                            accept=".pdf,.jpg,.png"
-                            description={t('paymentReceiptDescription', {size: PAYMENT_RECEIPT_MAX_SIZE_MB})}
-                            required={!therapistData?.membershipApplication?.paymentReceiptUrl && !paymentReceiptFile}
-                        />
-                        <Button type="submit" disabled={isLoading || (!paymentReceiptFile && !therapistData?.membershipApplication?.paymentReceiptUrl)}>
-                            {isLoading ? t('submittingApplication') : 
-                             ((therapistData?.membershipRenewalDate && new Date(therapistData.membershipRenewalDate) < new Date() ? t('renewMembershipButtonLabel') : t('applyForMembershipButtonLabel')))}
-                        </Button>
-                    </form>
-                ) : (
-                  <p className="text-sm text-gray-600">{t('membershipIsActive')}</p>
-                )}
-            </AccordionSection>
-
-            <AccordionSection 
-                titleKey="membershipHistoryTitle" 
-                icon={<DocumentDuplicateIcon />}
-                isOpen={activeSettingsAccordionSection === 'history'}
-                onClick={() => toggleSettingsAccordion('history')}
-            >
-                 {isLoading && membershipHistory.length === 0 ? <p>{t('loading')}...</p> :
-                  membershipHistory.length > 0 ? (
-                    <ul className="space-y-2 mt-3">
-                        {membershipHistory.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(item => (
-                            <li key={item.id} className="text-xs p-2 border-b border-gray-100">
-                                <strong>{new Date(item.date).toLocaleDateString()}:</strong> {item.action}
-                                {item.details && <span className="text-gray-500"> - {item.details}</span>}
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-sm text-gray-500 mt-2">{t('noMembershipHistoryAvailable', { default: 'No membership history available.'})}</p>
-                )}
-            </AccordionSection>
-        </div>
-    );
-};
-// ... other components from the file (e.g. TherapistLicensesTabContent)
-// Note: Only pasting the changed component. The rest of the file remains the same.
-// The full file content will be provided below.
-
-// Keep the existing imports
 
 const TherapistLicensesTabContent: React.FC = () => {
     const { t, direction } = useTranslation();
@@ -573,7 +396,7 @@ const TherapistLicensesTabContent: React.FC = () => {
                     id="newCertName" 
                     name="newCertName"
                     value={newCertName} 
-                    onChange={(e) => setNewCertName(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCertName(e.target.value)}
                     inputClassName="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent sm:text-sm bg-primary text-textOnLight"
                     required
                 />
@@ -582,7 +405,7 @@ const TherapistLicensesTabContent: React.FC = () => {
                     id="newCertCountry"
                     name="newCertCountry"
                     value={newCertCountry}
-                    onChange={(e) => setNewCertCountry(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCertCountry(e.target.value)}
                     inputClassName="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent sm:text-sm bg-primary text-textOnLight"
                     required
                 />
@@ -600,7 +423,7 @@ const TherapistLicensesTabContent: React.FC = () => {
 
             {(therapistData?.certifications?.length || 0) > 0 ? (
                 <ul className="space-y-3">
-                    {therapistData!.certifications!.map(cert => (
+                    {therapistData!.certifications!.map((cert: Certification) => (
                         <li key={cert.id} className="p-3 border border-gray-200 rounded-md flex flex-col sm:flex-row justify-between sm:items-center hover:bg-gray-50/30 transition-colors">
                             <div className="flex-grow mb-2 sm:mb-0">
                                 <p className="font-medium text-textOnLight">{cert.name} <span className="text-xs text-gray-400">({cert.country || t('countryNotSpecified', {default: 'Country not specified'})})</span></p>
@@ -849,7 +672,7 @@ const TherapistSpaceRentalTabContent: React.FC = () => {
                                             <Button 
                                                 size="sm" 
                                                 variant="ghost" 
-                                                onClick={(e) => { 
+                                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => { 
                                                     e.stopPropagation();
                                                     window.open(`https://wa.me/${clinicOwnerWhatsApp.replace(/\D/g, '')}?text=${encodeURIComponent(t('whatsappGreetingClinicSpace', { spaceName: space.name, clinicName: space.clinicName || t('yourClinic', {default: 'your clinic'}), appName: t('appName')}))}`, '_blank');
                                                 }} 
@@ -885,7 +708,175 @@ const TherapistSpaceRentalTabContent: React.FC = () => {
     );
 };
 
-// FULL FILE CONTENT continues...
+const TherapistSettingsTabContent: React.FC = () => {
+    const { t } = useTranslation();
+    const { therapistData, userAccountData, handleAccountSave, handleMembershipApplication, isLoading, membershipHistory } = useOutletContext<OutletContextType>();
+
+    const [accountData, setAccountData] = useState(userAccountData || { name: '', email: '' });
+    const [paymentReceiptFile, setPaymentReceiptFile] = useState<File | null>(null);
+    const [paymentReceiptPreview, setPaymentReceiptPreview] = useState<string | null>(null);
+    const [activeSettingsAccordionSection, setActiveSettingsAccordionSection] = useState<string | null>('accountInfo');
+
+    useEffect(() => {
+        setAccountData(userAccountData || { name: '', email: '' });
+    }, [userAccountData]);
+    
+    useEffect(() => { // For existing receipt preview
+        if (therapistData?.membershipApplication?.paymentReceiptUrl) {
+            setPaymentReceiptPreview(therapistData.membershipApplication.paymentReceiptUrl);
+        }
+    }, [therapistData?.membershipApplication?.paymentReceiptUrl]);
+
+    const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setAccountData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleAccountSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await handleAccountSave(accountData);
+    };
+    
+    const handleMembershipSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!paymentReceiptFile && !therapistData?.membershipApplication?.paymentReceiptUrl) {
+             alert(t('paymentReceiptRequiredError', { default: 'Payment receipt is required.' }));
+            return;
+        }
+        await handleMembershipApplication(paymentReceiptFile);
+        setPaymentReceiptFile(null); 
+        setPaymentReceiptPreview(null); // Clear preview after submit, new URL will come from therapistData
+        const receiptInput = document.getElementById('therapistPaymentReceiptFile') as HTMLInputElement;
+        if(receiptInput) receiptInput.value = "";
+    };
+    
+    const handlePaymentReceiptFileChange = (file: File | null) => {
+        setPaymentReceiptFile(file);
+        if(file) {
+            const reader = new FileReader();
+            reader.onloadend = () => setPaymentReceiptPreview(reader.result as string);
+            reader.readAsDataURL(file);
+        } else {
+            // Revert to original if file is cleared and an original existed
+            setPaymentReceiptPreview(therapistData?.membershipApplication?.paymentReceiptUrl || null);
+        }
+    };
+
+    const getAccountStatusPill = (status: Therapist['accountStatus'] | undefined) => {
+        if (!status) return null;
+        let colorClasses = 'bg-gray-100 text-gray-800';
+        let textKey = `therapistAccountStatus${status.charAt(0).toUpperCase() + status.slice(1).replace('_', '')}`;
+        
+        switch (status) {
+            case 'live': colorClasses = 'bg-green-100 text-green-700'; break;
+            case 'pending_approval': colorClasses = 'bg-yellow-100 text-yellow-700'; break;
+            case 'rejected': colorClasses = 'bg-red-100 text-red-700'; break;
+            case 'draft': colorClasses = 'bg-blue-100 text-blue-700'; break;
+        }
+        return <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${colorClasses}`}>{t(textKey, {default: status})}</span>;
+    };
+
+    const needsMembershipAction = !therapistData?.membershipRenewalDate || new Date(therapistData.membershipRenewalDate) < new Date() || therapistData.accountStatus === 'rejected' || therapistData.accountStatus === 'draft';
+
+    const toggleSettingsAccordion = (sectionName: string) => {
+        setActiveSettingsAccordionSection(activeSettingsAccordionSection === sectionName ? null : sectionName);
+    };
+
+    return (
+        <div className="bg-primary p-0 sm:p-6 rounded-lg shadow text-textOnLight space-y-3">
+            {/* Account Status Info Box for Transparency */}
+            <div className="p-4 border border-accent/20 bg-accent/5 rounded-lg">
+                <h4 className="font-semibold text-accent text-lg mb-2">{t('accountStatusLabel')}</h4>
+                <div className="flex items-center gap-3 mb-2">
+                    <span className="font-bold text-lg">{getAccountStatusPill(therapistData?.accountStatus)}</span>
+                </div>
+                 {therapistData?.accountStatus === 'rejected' && therapistData.adminNotes && (
+                    <div className="mt-2 p-3 bg-red-100/50 border border-red-200 rounded-md">
+                         <p className="text-sm font-semibold text-red-800">{t('adminNotesLabel')}:</p>
+                         <p className="text-sm text-red-700 mt-1">{therapistData.adminNotes}</p>
+                    </div>
+                )}
+                 {therapistData?.accountStatus === 'pending_approval' && therapistData.membershipApplication?.statusMessage && (
+                    <p className="text-sm text-yellow-700 mt-1">{t('applicationStatusMessageLabel', {default: 'Application Status:'})} {therapistData.membershipApplication.statusMessage}</p>
+                )}
+                 {therapistData?.accountStatus === 'live' && therapistData.membershipRenewalDate && (
+                    <p className="text-sm text-green-700 mt-1">{t('renewalDateLabel')}: {new Date(therapistData.membershipRenewalDate).toLocaleDateString()}</p>
+                 )}
+            </div>
+
+            <AccordionSection 
+                titleKey="dashboardAccountInformationTitle" 
+                icon={<UsersIcon />}
+                isOpen={activeSettingsAccordionSection === 'accountInfo'}
+                onClick={() => toggleSettingsAccordion('accountInfo')}
+            >
+                <form onSubmit={handleAccountSubmit} className="space-y-4">
+                    <InputField label={t('fullName')} id="name" name="name" value={accountData.name} onChange={handleAccountChange} />
+                    <InputField label={t('emailAddress')} id="email" name="email" type="email" value={accountData.email} onChange={handleAccountChange} 
+                     disabled // Email change in Firebase is complex and needs re-auth.
+                     description={t('emailChangeDisabledNote', { default: 'Changing email requires re-authentication and is currently disabled here.'})}
+                    />
+                    <Button type="submit" disabled={isLoading}>{isLoading ? t('saving') : t('saveChangesButtonLabel')}</Button>
+                </form>
+            </AccordionSection>
+
+            <AccordionSection 
+                titleKey="membershipManagementTitle" 
+                icon={<CheckCircleIcon />}
+                isOpen={activeSettingsAccordionSection === 'membership'}
+                onClick={() => toggleSettingsAccordion('membership')}
+            >
+                {needsMembershipAction ? (
+                     <form onSubmit={handleMembershipSubmit} className="mt-4 pt-4 border-t border-dashed border-gray-200 space-y-3">
+                         <h5 className="font-medium text-textOnLight">
+                            {therapistData?.accountStatus === 'rejected' ? t('resubmitApplicationTitle', {default: 'Resubmit Membership Application'}) :
+                             (therapistData?.membershipRenewalDate && new Date(therapistData.membershipRenewalDate) < new Date() ? t('renewMembershipTitle', {default: 'Renew Your Membership'}) :
+                             t('applyForMembershipTitle', {default: 'Apply for Membership'}))
+                            } ({t('therapistMembershipFeeLabel', {price: THERAPIST_MEMBERSHIP_FEE})})
+                        </h5>
+                        <FileUploadField 
+                            label={t('attachPaymentReceiptLabel')} 
+                            id="therapistPaymentReceiptFile"
+                            onFileChange={handlePaymentReceiptFileChange}
+                            currentFileUrl={paymentReceiptPreview} // Use state for preview consistency
+                            maxSizeMB={PAYMENT_RECEIPT_MAX_SIZE_MB}
+                            accept=".pdf,.jpg,.png"
+                            description={t('paymentReceiptDescription', {size: PAYMENT_RECEIPT_MAX_SIZE_MB})}
+                            required={!therapistData?.membershipApplication?.paymentReceiptUrl && !paymentReceiptFile}
+                        />
+                        <Button type="submit" disabled={isLoading || (!paymentReceiptFile && !therapistData?.membershipApplication?.paymentReceiptUrl)}>
+                            {isLoading ? t('submittingApplication') : 
+                             ((therapistData?.membershipRenewalDate && new Date(therapistData.membershipRenewalDate) < new Date() ? t('renewMembershipButtonLabel') : t('applyForMembershipButtonLabel')))}
+                        </Button>
+                    </form>
+                ) : (
+                  <p className="text-sm text-gray-600">{t('membershipIsActive')}</p>
+                )}
+            </AccordionSection>
+
+            <AccordionSection 
+                titleKey="membershipHistoryTitle" 
+                icon={<DocumentDuplicateIcon />}
+                isOpen={activeSettingsAccordionSection === 'history'}
+                onClick={() => toggleSettingsAccordion('history')}
+            >
+                 {isLoading && membershipHistory.length === 0 ? <p>{t('loading')}...</p> :
+                  membershipHistory.length > 0 ? (
+                    <ul className="space-y-2 mt-3">
+                        {membershipHistory.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(item => (
+                            <li key={item.id} className="text-xs p-2 border-b border-gray-100">
+                                <strong>{new Date(item.date).toLocaleDateString()}:</strong> {item.action}
+                                {item.details && <span className="text-gray-500"> - {item.details}</span>}
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="text-sm text-gray-500 mt-2">{t('noMembershipHistoryAvailable', { default: 'No membership history available.'})}</p>
+                )}
+            </AccordionSection>
+        </div>
+    );
+};
+
 const TherapistDashboardPageShell: React.FC = () => {
     const { user: authContextUser, firebaseUser, updateUserAuthContext } = useAuth(); 
     const { t } = useTranslation();
@@ -922,23 +913,22 @@ const TherapistDashboardPageShell: React.FC = () => {
 
                 const clinicsQuery = query(collection(db, 'clinicsData'), where('accountStatus', '==', 'live'));
                 const liveClinicsSnapshot = await getDocs(clinicsQuery);
-                const liveClinicsData = liveClinicsSnapshot.docs.map(d => ({id: d.id, ...d.data() } as Clinic));
+                const liveClinicsData = liveClinicsSnapshot.docs.map((d: any) => ({id: d.id, ...d.data() } as Clinic));
                 setAllClinics(liveClinicsData);
-                const liveClinicIds = liveClinicsData.map(c => c.id);
+                const liveClinicIds = liveClinicsData.map((c: any) => c.id);
 
                 if (liveClinicIds.length > 0) {
                     // Firestore 'in' queries are limited to 30 items. If more clinics, need multiple queries or different strategy.
-                    const spacesQueryConstraints = [where('clinicId', 'in', liveClinicIds.slice(0,30))]; // Handle >30 clinics if necessary
-                    const spacesQuery = query(collection(db, 'clinicSpaces'), ...spacesQueryConstraints);
+                    const spacesQuery = query(collection(db, 'clinicSpaces'), where('clinicId', 'in', liveClinicIds.slice(0,30)));
                     const spacesSnapshot = await getDocs(spacesQuery);
-                    setAvailableClinicSpaces(spacesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as ClinicSpaceListing)));
+                    setAvailableClinicSpaces(spacesSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ClinicSpaceListing)));
                 } else {
                     setAvailableClinicSpaces([]);
                 }
                 
                 const historyCollectionRef = collection(db, `therapistsData/${firebaseUser.uid}/membershipHistory`);
                 const historyQuerySnapshot = await getDocs(query(historyCollectionRef, orderBy("date", "desc"))); 
-                setMembershipHistory(historyQuerySnapshot.docs.map(d => ({id: d.id, ...d.data()} as MembershipHistoryItem)));
+                setMembershipHistory(historyQuerySnapshot.docs.map((d: any) => ({id: d.id, ...d.data()} as MembershipHistoryItem)));
 
             } catch (error) {
                 console.error("Firebase error fetching therapist dashboard data:", error);
@@ -966,17 +956,12 @@ const TherapistDashboardPageShell: React.FC = () => {
             if (profilePicFile) {
                 const filePath = `therapist_profiles/${firebaseUser.uid}/profile_pictures/${profilePicFile.name}-${Date.now()}`;
                 dataToSave.profilePictureUrl = await uploadFileToFirebase(profilePicFile, filePath);
-                if(oldProfilePicUrl && oldProfilePicUrl !== dataToSave.profilePictureUrl) await deleteFileFromFirebase(oldProfilePicUrl).catch(e => console.warn("Old profile pic delete failed", e));
-            } else if (dataToSave.profilePictureUrl === null && oldProfilePicUrl) { // Explicitly cleared
-                await deleteFileFromFirebase(oldProfilePicUrl).catch(e => console.warn("Profile pic delete failed", e));
+                if(oldProfilePicUrl && oldProfilePicUrl !== dataToSave.profilePictureUrl) await deleteFileFromFirebase(oldProfilePicUrl).catch((e: any) => console.warn("Old profile pic delete failed", e));
             }
-
             if (introVidFile) {
                 const filePath = `therapist_profiles/${firebaseUser.uid}/intro_videos/${introVidFile.name}-${Date.now()}`;
                 dataToSave.introVideoUrl = await uploadFileToFirebase(introVidFile, filePath);
-                 if(oldIntroVideoUrl && oldIntroVideoUrl !== dataToSave.introVideoUrl) await deleteFileFromFirebase(oldIntroVideoUrl).catch(e => console.warn("Old intro video delete failed", e));
-            } else if (dataToSave.introVideoUrl === null && oldIntroVideoUrl) { // Explicitly cleared
-                await deleteFileFromFirebase(oldIntroVideoUrl).catch(e => console.warn("Intro video delete failed", e));
+                 if(oldIntroVideoUrl && oldIntroVideoUrl !== dataToSave.introVideoUrl) await deleteFileFromFirebase(oldIntroVideoUrl).catch((e: any) => console.warn("Old intro video delete failed", e));
             }
         
             const therapistDocRef = doc(db, 'therapistsData', firebaseUser.uid);
@@ -1006,7 +991,7 @@ const TherapistDashboardPageShell: React.FC = () => {
             if (therapistData && therapistData.name !== updatedAccount.name) {
                 const therapistDocRef = doc(db, 'therapistsData', firebaseUser.uid);
                 await updateDoc(therapistDocRef, { name: updatedAccount.name, updatedAt: serverTimestamp() });
-                setTherapistData(prev => prev ? {...prev, name: updatedAccount.name} : null);
+                setTherapistData((prev: Therapist | null) => prev ? {...prev, name: updatedAccount.name} : null);
             }
              setUserAccountData(updatedAccount); // Update local state for settings tab
             alert(t('accountInfoSavedSuccess'));
@@ -1027,24 +1012,24 @@ const TherapistDashboardPageShell: React.FC = () => {
             if (receiptFile) {
                 const filePath = `therapist_profiles/${firebaseUser.uid}/payment_receipts/${receiptFile.name}-${Date.now()}`;
                 paymentReceiptUrl = await uploadFileToFirebase(receiptFile, filePath);
-                 if(oldReceiptUrl && oldReceiptUrl !== paymentReceiptUrl) await deleteFileFromFirebase(oldReceiptUrl).catch(e => console.warn("Old receipt delete failed", e));
+                 if(oldReceiptUrl && oldReceiptUrl !== paymentReceiptUrl) await deleteFileFromFirebase(oldReceiptUrl).catch((e: any) => console.warn("Old receipt delete failed", e));
             }
             if (!paymentReceiptUrl) {
                 alert(t('paymentReceiptRequiredError'));
                 setIsLoading(false); return;
             }
 
-            const applicationDataForFirestore: any = { // Type as any for Firestore specific fields
+            const applicationDataForFirestore = {
                 membershipApplication: {
-                    date: Timestamp.now().toDate().toISOString(),
+                    date: new Date().toISOString(),
                     paymentReceiptUrl,
                     statusMessage: "Awaiting admin review",
                 },
-                accountStatus: 'pending_approval',
+                accountStatus: 'pending_approval' as const,
                 updatedAt: serverTimestamp(),
             };
 
-            const applicationDataForState: Partial<Therapist> = { // Type for local state
+            const applicationDataForState: Partial<Therapist> = {
                  membershipApplication: {
                     date: applicationDataForFirestore.membershipApplication.date,
                     paymentReceiptUrl: applicationDataForFirestore.membershipApplication.paymentReceiptUrl,
@@ -1058,14 +1043,14 @@ const TherapistDashboardPageShell: React.FC = () => {
             
             const historyEntry: MembershipHistoryItem = {
                 id: `hist-${Date.now()}`, 
-                date: Timestamp.now().toDate().toISOString(),
+                date: new Date().toISOString(),
                 action: t('membershipAppliedAction', { tier: STANDARD_MEMBERSHIP_TIER_NAME }),
                 details: t('receiptUploadedDetails')
             };
             const historyDocRef = doc(collection(db, `therapistsData/${firebaseUser.uid}/membershipHistory`), historyEntry.id);
             await setDoc(historyDocRef, historyEntry);
 
-            setTherapistData(prev => prev ? ({...prev, ...applicationDataForState}) : null);
+            setTherapistData((prev: Therapist | null) => prev ? ({...prev, ...applicationDataForState}) : null);
             setMembershipHistory(prev => [historyEntry, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
             alert(t('membershipApplicationSubmitted'));
 
@@ -1080,33 +1065,33 @@ const TherapistDashboardPageShell: React.FC = () => {
         if (!firebaseUser || !therapistData) return;
         setIsLoading(true);
         let finalCertification = {...certification};
-        const oldCertFileUrl = therapistData.certifications?.find(c => c.id === certification.id)?.fileUrl;
+        const oldCertFileUrl = therapistData.certifications?.find((c: Certification) => c.id === certification.id)?.fileUrl;
 
         try {
             if (certFile) {
                 const filePath = `therapist_profiles/${firebaseUser.uid}/certifications/${finalCertification.id}-${certFile.name}`;
                 finalCertification.fileUrl = await uploadFileToFirebase(certFile, filePath);
-                if(oldCertFileUrl && oldCertFileUrl !== finalCertification.fileUrl) await deleteFileFromFirebase(oldCertFileUrl).catch(e => console.warn("Old cert file delete failed", e));
+                if(oldCertFileUrl && oldCertFileUrl !== finalCertification.fileUrl) await deleteFileFromFirebase(oldCertFileUrl).catch((e: any) => console.warn("Old cert file delete failed", e));
             }
             if (!finalCertification.fileUrl) { 
                  alert(t('certNameFileRequired')); setIsLoading(false); return;
             }
-            finalCertification.uploadedAt = Timestamp.now().toDate().toISOString();
+            finalCertification.uploadedAt = new Date().toISOString();
             finalCertification.isVerified = false; // Reset verification status on new upload/update
             finalCertification.verificationNotes = "";
 
 
-            const existingCertIndex = therapistData.certifications?.findIndex(c => c.id === finalCertification.id) ?? -1;
+            const existingCertIndex = therapistData.certifications?.findIndex((c: Certification) => c.id === finalCertification.id) ?? -1;
             let updatedCerts;
             if (existingCertIndex > -1 && therapistData.certifications) { 
-                updatedCerts = therapistData.certifications.map(c => c.id === finalCertification.id ? finalCertification : c);
+                updatedCerts = therapistData.certifications.map((c: Certification) => c.id === finalCertification.id ? finalCertification : c);
             } else { 
                 updatedCerts = [...(therapistData.certifications || []), finalCertification];
             }
             
             const therapistDocRef = doc(db, 'therapistsData', firebaseUser.uid);
             await updateDoc(therapistDocRef, { certifications: updatedCerts, updatedAt: serverTimestamp() });
-            setTherapistData(prev => prev ? ({ ...prev, certifications: updatedCerts }) : null);
+            setTherapistData((prev: Therapist | null) => prev ? ({ ...prev, certifications: updatedCerts }) : null);
             alert(t('profileSavedSuccess')); 
         } catch (error: any) {
             console.error("Certification save error:", error);
@@ -1119,15 +1104,15 @@ const TherapistDashboardPageShell: React.FC = () => {
         if (!firebaseUser || !therapistData || !therapistData.certifications) return;
         setIsLoading(true);
         try {
-            const certToDelete = therapistData.certifications.find(c => c.id === certId);
+            const certToDelete = therapistData.certifications.find((c: Certification) => c.id === certId);
             if (certToDelete?.fileUrl) {
-                await deleteFileFromFirebase(certToDelete.fileUrl).catch(e => console.warn("Cert file delete failed", e));
+                await deleteFileFromFirebase(certToDelete.fileUrl).catch((e: any) => console.warn("Cert file delete failed", e));
             }
 
-            const updatedCerts = therapistData.certifications.filter(c => c.id !== certId);
+            const updatedCerts = therapistData.certifications.filter((c: Certification) => c.id !== certId);
             const therapistDocRef = doc(db, 'therapistsData', firebaseUser.uid);
             await updateDoc(therapistDocRef, { certifications: updatedCerts, updatedAt: serverTimestamp() });
-            setTherapistData(prev => prev ? ({ ...prev, certifications: updatedCerts }) : null);
+            setTherapistData((prev: Therapist | null) => prev ? ({ ...prev, certifications: updatedCerts }) : null);
             alert(t('certificationDeletedSuccess', {default: "Certification deleted."}));
         } catch (error: any) {
             console.error("Certification delete error:", error);

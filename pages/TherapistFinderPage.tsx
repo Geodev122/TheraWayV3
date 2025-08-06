@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Therapist, UserRole } from '../types';
 import { APP_NAME, AVAILABILITY_OPTIONS, SPECIALIZATIONS_LIST, LANGUAGES_LIST } from '../constants';
@@ -11,14 +12,16 @@ import { InputField, SelectField, CheckboxField } from '../components/dashboard/
 import { useTranslation } from '../hooks/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { db } from '../firebase';
-import { collection, query, where, getDocs, doc, setDoc, deleteDoc, limit as firestoreLimit, startAfter, Timestamp, orderBy, documentId, getDoc } from 'firebase/firestore';
-import * as ReactRouterDOM from 'react-router-dom';
+import { collection, query, where, getDocs, doc, setDoc, deleteDoc, limit as firestoreLimit, startAfter, Timestamp, orderBy, documentId, getDoc, QueryDocumentSnapshot } from 'firebase/firestore';
+
 
 import {
-    HeartIcon, ChevronLeftIcon, ChevronRightIcon, InformationCircleIcon,
-    AdjustmentsHorizontalIcon, FilterSolidIcon
+    HeartIcon, ChevronLeftIcon, ChevronRightIcon, WhatsAppIcon, InformationCircleIcon,
+    AdjustmentsHorizontalIcon, Squares2X2Icon, MapIcon, ListBulletIcon, XIcon, FilterSolidIcon,
+    SearchIcon
 } from '../components/icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, useParams } from 'react-router-dom';
 
 
 type ViewMode = 'spotlight' | 'grid' | 'map';
@@ -35,8 +38,9 @@ interface Filters {
 const ITEMS_PER_PAGE_GRID = 9;
 const ITEMS_PER_FETCH_SPOTLIGHT = 20;
 const NAVBAR_HEIGHT_PX = 64;
-const NEW_NAV_BAR_HEIGHT_PX = 72;
 const ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX = 88;
+const BOTTOM_NAV_BAR_HEIGHT_PX = 72;
+const BOTTOM_NAV_BAR_MARGIN_PX = 16;
 
 
 const useKeyboardNavControls = (onPrev: () => void, onNext: () => void, onViewProfile: () => void, enabled: boolean) => {
@@ -52,42 +56,19 @@ const useKeyboardNavControls = (onPrev: () => void, onNext: () => void, onViewPr
   }, [onPrev, onNext, onViewProfile, enabled]);
 };
 
-// Custom Icon components for the new navigation bar, matching the provided design
-const NavHeartIcon = ({ active }: { active: boolean }) => (
-    <div className={`flex items-center justify-center transition-all duration-300 transform group-hover:scale-110 ${active ? 'bg-yellow-400 rounded-full h-9 w-9' : 'h-9 w-9'}`}>
-        <HeartIcon filled className={`w-5 h-5 transition-colors duration-300 ${active ? 'text-accent' : 'text-teal-200'}`} />
-    </div>
-);
-
-const NavGridIcon = ({ active }: { active: boolean }) => (
-    <div className="flex items-center justify-center h-9 w-9 transform group-hover:scale-110 transition-transform duration-300">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-6 h-6 transition-colors duration-200 ${active ? 'text-yellow-400' : 'text-teal-200'}`}>
-            <path fillRule="evenodd" d="M3 3.75A.75.75 0 013.75 3h6.75a.75.75 0 01.75.75v6.75a.75.75 0 01-.75.75H3.75a.75.75 0 01-.75-.75V3.75zm12 0A.75.75 0 0115.75 3h6.75a.75.75 0 01.75.75v6.75a.75.75 0 01-.75.75h-6.75a.75.75 0 01-.75-.75V3.75zM3 14.25a.75.75 0 01.75-.75h6.75a.75.75 0 01.75.75v6.75a.75.75 0 01-.75.75H3.75a.75.75 0 01-.75-.75v-6.75zm12 0a.75.75 0 01.75-.75h6.75a.75.75 0 01.75.75v6.75a.75.75 0 01-.75.75h-6.75a.75.75 0 01-.75-.75v-6.75z" clipRule="evenodd" />
-        </svg>
-    </div>
-);
-
-const NavMapIcon = ({ active }: { active: boolean }) => (
-    <div className="flex items-center justify-center h-9 w-9 transform group-hover:scale-110 transition-transform duration-300">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-6 h-6 transition-colors duration-200 ${active ? 'text-yellow-400' : 'text-teal-200'}`}>
-            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 20l-4.95-5.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-        </svg>
-    </div>
-);
-
 
 export const TherapistFinderPage: React.FC = () => {
   const { user, firebaseUser, isAuthenticated, promptLogin } = useAuth();
   const { t, direction } = useTranslation();
   usePageTitle('therapistFinderTitle');
-  const navigate = ReactRouterDOM.useNavigate();
-  const { therapistId: urlTherapistId } = ReactRouterDOM.useParams<{ therapistId: string }>();
+  const navigate = useNavigate();
+  const { therapistId: urlTherapistId } = useParams<{ therapistId: string }>();
 
   const [isLoading, setIsLoading] = useState(true);
   const [allTherapistsStorage, setAllTherapistsStorage] = useState<Therapist[]>([]);
   const [displayedTherapists, setDisplayedTherapists] = useState<Therapist[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [lastVisibleDoc, setLastVisibleDoc] = useState<any>(null);
+  const [lastVisibleDoc, setLastVisibleDoc] = useState<QueryDocumentSnapshot | null>(null);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedTherapistForModal, setSelectedTherapistForModal] = useState<Therapist | null>(null);
@@ -110,11 +91,13 @@ export const TherapistFinderPage: React.FC = () => {
   const [gridCurrentPage, setGridCurrentPage] = useState(1);
 
   const mainContentAreaPaddingBottom = useMemo(() => {
-    let navBarHeightForPadding = NEW_NAV_BAR_HEIGHT_PX + 16; // height + bottom-4 offset
+    // Base padding to clear the new floating nav bar and provide some breathing room
+    let basePadding = BOTTOM_NAV_BAR_HEIGHT_PX + BOTTOM_NAV_BAR_MARGIN_PX + 16;
     if (viewMode === 'spotlight') {
-      navBarHeightForPadding += ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX;
+        // In spotlight mode, add space for the action buttons (like, skip, next)
+        basePadding += ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX;
     }
-    return `${navBarHeightForPadding + 16}px`; // Add extra space
+    return `${basePadding}px`;
   }, [viewMode]);
 
   const availableSpecializations = useMemo(() => SPECIALIZATIONS_LIST.sort(), []);
@@ -159,36 +142,34 @@ export const TherapistFinderPage: React.FC = () => {
   }, [urlTherapistId, fetchSingleTherapist, isDetailModalOpen, selectedTherapistForModal]);
 
 
-  const fetchTherapistsFromFirestore = useCallback(async (filters: Filters, loadMore = false, currentLastVisibleForPagination?: any) => {
+  const fetchTherapistsFromFirestore = useCallback(async (filters: Filters, loadMore = false, currentLastVisibleForPagination?: QueryDocumentSnapshot) => {
     if (urlTherapistId && !loadMore && !selectedTherapistForModal) return;
 
     if (!loadMore) setIsLoading(true);
     setApiError(null);
 
     try {
-      const therapistsCollectionRef = collection(db, 'therapistsData');
-      let qConstraints: any[] = [where('accountStatus', '==', 'live')];
+      let q = query(collection(db, 'therapistsData'), where('accountStatus', '==', 'live'));
 
-      if (filters.specializations.length > 0) qConstraints.push(where('specializations', 'array-contains-any', filters.specializations));
-      if (filters.languages.length > 0) qConstraints.push(where('languages', 'array-contains-any', filters.languages));
-      if (filters.availability.length > 0) qConstraints.push(where('availability', 'array-contains-any', filters.availability));
-
-      qConstraints.push(orderBy('name'));
+      if (filters.specializations.length > 0) q = query(q, where('specializations', 'array-contains-any', filters.specializations));
+      if (filters.languages.length > 0) q = query(q, where('languages', 'array-contains-any', filters.languages));
+      if (filters.availability.length > 0) q = query(q, where('availability', 'array-contains-any', filters.availability));
+      
+      q = query(q, orderBy('name'));
 
       if (loadMore && currentLastVisibleForPagination) {
-        qConstraints.push(startAfter(currentLastVisibleForPagination));
+        q = query(q, startAfter(currentLastVisibleForPagination));
       }
-      qConstraints.push(firestoreLimit(viewMode === 'spotlight' ? ITEMS_PER_FETCH_SPOTLIGHT : ITEMS_PER_PAGE_GRID * 3));
+      q = query(q, firestoreLimit(viewMode === 'spotlight' ? ITEMS_PER_FETCH_SPOTLIGHT : ITEMS_PER_PAGE_GRID * 3));
 
-      const finalQuery = query(therapistsCollectionRef, ...qConstraints);
-      const querySnapshot = await getDocs(finalQuery);
+      const querySnapshot = await getDocs(q);
 
       const fetchedTherapists: Therapist[] = [];
-      querySnapshot.forEach(docSnap => {
+      querySnapshot.forEach((docSnap: QueryDocumentSnapshot) => {
         fetchedTherapists.push({ id: docSnap.id, ...docSnap.data() } as Therapist);
       });
 
-      const newLastVisibleUpdate = querySnapshot.docs[querySnapshot.docs.length - 1];
+      const newLastVisibleUpdate = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
 
       let clientFilteredTherapists = fetchedTherapists.filter(therapist => {
         const searchTermLower = filters.searchTerm.toLowerCase();
@@ -250,7 +231,7 @@ export const TherapistFinderPage: React.FC = () => {
         const favCollectionRef = collection(db, `users/${firebaseUser.uid}/favorites`);
         const querySnapshot = await getDocs(favCollectionRef);
         const favIds = new Set<string>();
-        querySnapshot.forEach(docSnap => favIds.add(docSnap.id));
+        querySnapshot.forEach((docSnap: QueryDocumentSnapshot) => favIds.add(docSnap.id));
         setFavorites(favIds);
     } catch (error) {
         console.error("Error fetching favorites:", error);
@@ -274,7 +255,7 @@ export const TherapistFinderPage: React.FC = () => {
     }
     
     setLastVisibleDoc(null);
-    fetchTherapistsFromFirestore(activeFilters, false, null);
+    fetchTherapistsFromFirestore(activeFilters, false);
 
   }, [activeFilters, viewMode, urlTherapistId, selectedTherapistForModal]);
 
@@ -363,7 +344,7 @@ export const TherapistFinderPage: React.FC = () => {
             await setDoc(favDocRef, { addedAt: Timestamp.now() });
         }
         if (activeFilters.showOnlyLiked) {
-             fetchTherapistsFromFirestore(activeFilters, false, null);
+             fetchTherapistsFromFirestore(activeFilters, false);
         }
     } catch (error) {
         setFavorites(prevFavorites => {
@@ -426,43 +407,39 @@ export const TherapistFinderPage: React.FC = () => {
       isCurrentUserAdmin: boolean;
   }> = ({ currentApiError, currentNumActiveFilters, onAdjustFiltersClick, isCurrentUserAdmin }) => {
       const { t } = useTranslation();
-      
-      let title: string;
-      let message: string;
-      let showAdjustFiltersButton = true;
-      let showAdminButton = false;
+      let titleKey = 'noResultsFound';
+      let messageKey = 'noResultsMessage';
+      let hintKey = '';
+      let showAdjustFilters = true;
 
       if (currentApiError) {
-          title = t('errorLoadingTherapists');
-          message = t('tryAgainLaterErrorHint', { default: "This may be due to a network issue. Please try again later." });
-          showAdjustFiltersButton = false;
+          titleKey = 'errorLoadingTherapists';
+          messageKey = currentApiError; // Use the actual error message
+          hintKey = 'tryAgainLaterErrorHint';
+          showAdjustFilters = false;
       } else if (currentNumActiveFilters > 0) {
-          title = t('noResultsFound');
-          message = t('noResultsMessage', { default: "We couldn't find anyone matching your specific filters. Try removing a specialization or broadening your search to see more professionals." });
+          titleKey = 'noResultsFound';
+          messageKey = 'noResultsMessage';
       } else {
-          title = t('noTherapistsAvailable');
-          message = t('noTherapistsMessage', { default: "While no one is available in this area right now, our community of therapists is always growing. Please check back soon!" });
-          showAdjustFiltersButton = true;
-          if (isCurrentUserAdmin) {
-              message = t('noTherapistsAdminMessage');
-              showAdminButton = true;
-              showAdjustFiltersButton = false;
-          }
+          titleKey = 'noTherapistsAvailable';
+          messageKey = isCurrentUserAdmin ? 'noTherapistsAdminMessage' : 'noTherapistsMessage';
+          showAdjustFilters = !isCurrentUserAdmin;
       }
 
       return (
           <div className="flex flex-col flex-grow items-center justify-center text-center p-8 h-full animate-fadeIn">
               <InformationCircleIcon className="w-20 h-20 text-accent/40 mb-6"/>
-              <h2 className="text-2xl font-semibold text-textDarker mb-3">{title}</h2>
-              <p className="text-textOnLight/70 max-w-md mb-1">{message}</p>
-              
-              {showAdjustFiltersButton && (
-                  <Button variant="primary" className="mt-6" onClick={onAdjustFiltersClick} leftIcon={<AdjustmentsHorizontalIcon/>}>
+              <h2 className="text-2xl font-semibold text-textDarker mb-3">{t(titleKey)}</h2>
+              <p className="text-textOnLight/70 max-w-md mb-1">{t(messageKey)}</p>
+              {hintKey && <p className="text-textOnLight/60 text-xs max-w-md mb-6">{t(hintKey)}</p>}
+
+              {showAdjustFilters && (
+                  <Button variant="primary" className="mt-4" onClick={onAdjustFiltersClick} leftIcon={<AdjustmentsHorizontalIcon/>}>
                       {t('adjustFilters')}
                   </Button>
               )}
-              {showAdminButton && (
-                   <Button variant="primary" className="mt-6" onClick={() => navigate('/dashboard/admin')}>{t('goToAdminPanel')}</Button>
+              {isCurrentUserAdmin && !currentApiError && currentNumActiveFilters === 0 && (
+                   <Button variant="primary" className="mt-4" onClick={() => navigate('/dashboard/admin')}>{t('goToAdminPanel')}</Button>
               )}
           </div>
       );
@@ -482,7 +459,7 @@ export const TherapistFinderPage: React.FC = () => {
     top: `${NAVBAR_HEIGHT_PX + 8}px`,
     left: `8px`,
     right: `8px`,
-    bottom: `${NEW_NAV_BAR_HEIGHT_PX + ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX + 16 + 8}px`,
+    bottom: `${BOTTOM_NAV_BAR_HEIGHT_PX + BOTTOM_NAV_BAR_MARGIN_PX + ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX + 8}px`,
     zIndex: 30,
   }), []);
 
@@ -590,18 +567,13 @@ export const TherapistFinderPage: React.FC = () => {
         </div>
     );
   };
+
+  const filterButtonActive = isFilterModalOpen || numActiveFilters > 0;
   
   let contentArea;
   if (viewMode === 'spotlight') contentArea = renderSpotlightView();
   else if (viewMode === 'grid') contentArea = renderGridView();
   else if (viewMode === 'map') contentArea = renderMapView();
-
-    const viewModes = [
-        { key: 'spotlight', icon: NavHeartIcon, labelKey: 'viewModeSpotlight' },
-        { key: 'grid', icon: NavGridIcon, labelKey: 'viewModeGrid' },
-        { key: 'map', icon: NavMapIcon, labelKey: 'viewModeMap' },
-    ];
-
 
   return (
     <div className="flex flex-col flex-grow bg-background overflow-hidden" style={{paddingBottom: mainContentAreaPaddingBottom}}>
@@ -636,7 +608,7 @@ export const TherapistFinderPage: React.FC = () => {
             <div
                 className="fixed left-0 right-0 bg-background/95 backdrop-blur-md shadow-top-lg px-3 flex flex-col items-center justify-center border-t border-secondary/50"
                 style={{
-                    bottom: `${NEW_NAV_BAR_HEIGHT_PX + 16}px`, // Adjusted for new nav bar
+                    bottom: `${BOTTOM_NAV_BAR_HEIGHT_PX + BOTTOM_NAV_BAR_MARGIN_PX}px`,
                     height: `${ACTION_BUTTONS_SPOTLIGHT_AREA_HEIGHT_PX}px`,
                     zIndex: 950
                 }}
@@ -666,44 +638,55 @@ export const TherapistFinderPage: React.FC = () => {
             </div>
           )}
 
-          <div className="fixed bottom-4 inset-x-0 z-[1000] flex justify-center" role="navigation" aria-label={t('mainNavigation')}>
-            <div className="w-full max-w-sm bg-accent rounded-full shadow-2xl flex items-center justify-between p-1.5" style={{boxShadow: '0 8px 30px rgba(0,0,0,0.2)'}}>
-                <div className="flex items-center">
-                    {viewModes.map(item => {
-                        const isActive = viewMode === item.key;
-                        const IconComponent = item.icon;
-                        return (
-                            <button
-                                key={item.key}
-                                onClick={() => handleViewModeChange(item.key as ViewMode)}
-                                className="flex flex-col items-center justify-center p-1 rounded-full w-20 h-16 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-accent focus-visible:ring-white"
-                                aria-label={t(item.labelKey)}
-                                aria-pressed={isActive}
-                            >
-                                <IconComponent active={isActive} />
-                                <span className={`mt-1 text-[10px] uppercase tracking-wider transition-all duration-300 ${isActive ? 'text-white font-bold' : 'text-teal-200/80 group-hover:text-white font-medium'}`}>
-                                    {t(item.labelKey)}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <div className="pr-1">
-                    <button
-                        onClick={() => setIsFilterModalOpen(true)}
-                        className="relative p-3 rounded-full transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-accent focus-visible:ring-white group"
-                        aria-label={t('filtersButtonLabel')}
-                    >
-                        <FilterSolidIcon className="w-7 h-7 text-teal-100 transition-transform duration-300 group-hover:scale-110" />
+          <nav
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm z-[1000] animate-slideUpFadeIn"
+            role="navigation"
+            aria-label={t('mainNavigation')}
+          >
+            <div className="bg-primary/80 backdrop-blur-lg rounded-2xl shadow-lg flex items-center justify-between p-1.5 space-x-1">
+                {/* Filter Button */}
+                <button
+                    onClick={() => setIsFilterModalOpen(true)}
+                    className="flex-1 flex flex-col items-center justify-center py-2 px-3 rounded-lg group focus:outline-none relative transition-all duration-200 ease-in-out active:scale-95 hover:bg-accent/10"
+                    aria-label={filterButtonActive ? t('filterActiveAction', { count: numActiveFilters }) : t('filtersButtonLabel')}
+                >
+                    <span className="relative">
+                        <AdjustmentsHorizontalIcon className={`w-6 h-6 transition-colors ${filterButtonActive ? 'text-accent' : 'text-textOnLight/70 group-hover:text-accent'}`} />
                         {numActiveFilters > 0 && (
-                            <span className="absolute top-1.5 right-1.5 block h-3.5 w-3.5 rounded-full bg-red-500 border-2 border-accent animate-pulse" aria-label={`${numActiveFilters} ${t('filters')} active`}></span>
+                            <span className="absolute -top-1 -right-1.5 bg-danger text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-primary">
+                                {numActiveFilters}
+                            </span>
                         )}
-                    </button>
-                </div>
-            </div>
-          </div>
+                    </span>
+                    <span className={`text-[10px] leading-tight font-medium mt-0.5 transition-colors ${filterButtonActive ? 'text-accent' : 'text-textOnLight/90 group-hover:text-accent'}`}>
+                        {t('filtersButtonLabel')}
+                    </span>
+                </button>
 
+                <div className="h-8 w-px bg-secondary/70"></div>
+
+                {/* View Toggles */}
+                {[
+                    { key: 'spotlight', icon: <SearchIcon />, labelKey: 'viewModeSpotlight' },
+                    { key: 'grid', icon: <Squares2X2Icon />, labelKey: 'viewModeGrid' },
+                    { key: 'map', icon: <MapIcon />, labelKey: 'viewModeMap' },
+                ].map(item => (
+                    <button
+                        key={item.key}
+                        onClick={() => handleViewModeChange(item.key as ViewMode)}
+                        className={`flex-1 flex flex-col items-center justify-center py-2 px-3 rounded-lg group focus:outline-none transition-colors duration-200 ease-in-out active:scale-95
+                                   ${viewMode === item.key ? 'bg-accent/10 text-accent' : 'text-textOnLight/70 hover:bg-accent/5 hover:text-accent'}`}
+                        aria-label={t(item.labelKey)}
+                        aria-pressed={viewMode === item.key}
+                    >
+                        <span className="w-6 h-6 mb-0.5">
+                            {item.icon}
+                        </span>
+                        <span className="text-[10px] leading-tight truncate font-medium">{t(item.labelKey)}</span>
+                    </button>
+                ))}
+            </div>
+          </nav>
 
           {selectedTherapistForModal && (
             <TherapistDetailModal

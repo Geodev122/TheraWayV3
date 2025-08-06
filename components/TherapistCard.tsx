@@ -78,6 +78,7 @@ const TherapistCardComponent: React.FC<TherapistCardProps> = ({ therapist, onVie
             >
                 {t('viewProfile')}
             </Button>
+            {therapist.whatsappNumber && (
             <Button 
                 variant="ghost" 
                 size="md" 
@@ -87,6 +88,7 @@ const TherapistCardComponent: React.FC<TherapistCardProps> = ({ therapist, onVie
             >
                 {t('connectOnWhatsApp')}
             </Button>
+            )}
             </div>
         </div>
       </div>

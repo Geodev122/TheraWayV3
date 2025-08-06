@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -48,7 +47,7 @@ export const ClientProfilePage: React.FC = () => {
             throw new Error(t('authenticationError'));
         }
 
-        let newProfilePictureServerUrl = user.profilePictureUrl;
+        let newProfilePictureServerUrl: string | null = user.profilePictureUrl || null;
         const oldProfilePictureUrl = user.profilePictureUrl;
 
         if (data.profilePictureFile) {

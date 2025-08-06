@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, FormEvent, useCallback, useMemo } from 'react';
-import * as ReactRouterDOM from 'react-router-dom';
+import { Outlet, Route, Routes, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -86,14 +85,364 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({ titleKey, icon, isO
     );
 };
 
-// ... other components from the file (e.g. ClinicProfileTabContent)
-// Note: Only pasting the changed component. The rest of the file remains the same.
-// The full file content will be provided below.
+const ClinicProfileTabContent: React.FC = () => {
+    const { t, direction } = useTranslation();
+    usePageTitle('dashboardClinicProfileTab');
+    const { clinicData, handleClinicProfileSave, isLoading } = useOutletContext<OutletContextType>();
+    
+    const [profileData, setProfileData] = useState<Partial<Clinic>>(clinicData || {});
+    const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+    const [additionalPhotosFiles, setAdditionalPhotosFiles] = useState<(File|null)[]>(Array(5).fill(null));
+    const [additionalPhotoPreviews, setAdditionalPhotoPreviews] = useState<(string|null)[]>(Array(5).fill(null));
 
+    useEffect(() => {
+        setProfileData(clinicData || {});
+        setProfilePictureFile(null);
+        
+        const initialPreviews = Array(5).fill(null);
+        const initialFiles = Array(5).fill(null);
+        if (clinicData?.photos) {
+            clinicData.photos.slice(0, 5).forEach((url, i) => initialPreviews[i] = url);
+        }
+        setAdditionalPhotoPreviews(initialPreviews);
+        setAdditionalPhotosFiles(initialFiles);
+
+    }, [clinicData]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setProfileData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+    
+    const handleAmenitiesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setProfileData(prev => ({ ...prev, amenities: e.target.value.split(',').map(a => a.trim()).filter(a => a) }));
+    };
+
+    const handleOperatingHoursChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const lines = e.target.value.split('\n');
+        const hours: Record<string, string> = {};
+        lines.forEach(line => {
+            const parts = line.split(':');
+            if (parts.length === 2) {
+                hours[parts[0].trim()] = parts[1].trim();
+            }
+        });
+        setProfileData(prev => ({ ...prev, operatingHours: hours }));
+    };
+
+    const handleProfilePictureFileChange = (file: File | null) => setProfilePictureFile(file);
+
+    const handleAdditionalPhotoChange = (index: number, file: File | null) => {
+        const newFiles = [...additionalPhotosFiles];
+        newFiles[index] = file;
+        setAdditionalPhotosFiles(newFiles);
+
+        const newPreviews = [...additionalPhotoPreviews];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                newPreviews[index] = reader.result as string; // Blob URL for new file
+                setAdditionalPhotoPreviews([...newPreviews]);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            newPreviews[index] = null; // Cleared slot
+            setAdditionalPhotoPreviews([...newPreviews]);
+        }
+    };
+    
+    const addPhotoSlot = () => { // This function might not be needed if we always show 5 slots.
+        // If logic needs dynamic slots, this would be more complex.
+        // For fixed 5 slots, user just fills them.
+    };
+
+    const removePhotoSlot = (index: number) => { // This is more accurately "clearPhotoSlot"
+        handleAdditionalPhotoChange(index, null);
+    };
+
+
+    const handleProfileSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        // Pass the full additionalPhotosFiles and additionalPhotoPreviews arrays
+        await handleClinicProfileSave(
+            profileData, 
+            profilePictureFile, 
+            additionalPhotosFiles, 
+            additionalPhotoPreviews
+        );
+    };
+    
+    const [activeAccordion, setActiveAccordion] = useState<string | null>("businessProfile");
+
+    if (isLoading && !clinicData) {
+      return <div className="p-6 text-center text-textOnLight">{t('loading')}</div>;
+    }
+
+    return (
+        <form onSubmit={handleProfileSubmit} className="space-y-3">
+            <h2 className="text-2xl font-semibold text-textOnLight border-b border-gray-200 pb-4 mb-3 px-4 sm:px-0">{t('editClinicProfile')}</h2>
+            <AccordionSection titleKey="clinicBusinessProfileTitle" icon={<BuildingOfficeIcon />} isOpen={activeAccordion === "businessProfile"} onClick={() => setActiveAccordion(activeAccordion === "businessProfile" ? null : "businessProfile")}>
+                <FileUploadField
+                    label={t('clinicProfilePictureLabel')}
+                    id="clinicProfilePictureUrl"
+                    currentFileUrl={profileData.profilePictureUrl || clinicData?.profilePictureUrl}
+                    onFileChange={handleProfilePictureFileChange}
+                    accept="image/*" maxSizeMB={PROFILE_PICTURE_MAX_SIZE_MB}
+                    description={t('uploadProfilePictureDescription', {size: PROFILE_PICTURE_MAX_SIZE_MB})}
+                    required={!profileData.profilePictureUrl && !clinicData?.profilePictureUrl}
+                />
+                <InputField label={t('clinicBusinessName')} id="name" name="name" value={profileData.name || ''} onChange={handleChange} required />
+                <TextareaField label={t('clinicProfileDescription')} id="description" name="description" value={profileData.description || ''} onChange={handleChange} rows={4} description={t('clinicDescriptionHelperText')} />
+            </AccordionSection>
+
+            <AccordionSection titleKey="contactAndLocationTitle" icon={<MapPinIcon />} isOpen={activeAccordion === "contactLocation"} onClick={() => setActiveAccordion(activeAccordion === "contactLocation" ? null : "contactLocation")}>
+                 <InputField label={t('clinicFullAddressLabel')} id="address" name="address" value={profileData.address || ''} onChange={handleChange} required />
+                 <InputField label={t('contactWhatsAppNumber')} id="whatsappNumber" name="whatsappNumber" type="tel" value={profileData.whatsappNumber || ''} onChange={handleChange} required />
+            </AccordionSection>
+
+            <AccordionSection titleKey="operatingHoursAndAmenitiesTitle" icon={<ClockIcon />} isOpen={activeAccordion === "hoursAmenities"} onClick={() => setActiveAccordion(activeAccordion === "hoursAmenities" ? null : "hoursAmenities")}>
+                <TextareaField label={t('operatingHoursLabel')} id="operatingHours" name="operatingHours" 
+                    value={profileData.operatingHours ? Object.entries(profileData.operatingHours).map(([day, time]) => `${day}: ${time}`).join('\n') : ''}
+                    onChange={handleOperatingHoursChange} rows={3} description={t('operatingHoursHelperText')} 
+                />
+                <InputField label={t('generalAmenitiesLabel')} id="amenities" name="amenities" 
+                    value={(profileData.amenities || []).join(', ')} 
+                    onChange={handleAmenitiesChange} 
+                    description={t('generalAmenitiesHelperText')}
+                />
+            </AccordionSection>
+
+            <AccordionSection titleKey="additionalClinicPhotosTitle" icon={<PhotoIcon />} isOpen={activeAccordion === "additionalPhotos"} onClick={() => setActiveAccordion(activeAccordion === "additionalPhotos" ? null : "additionalPhotos")}>
+                <div className="space-y-4">
+                    {additionalPhotoPreviews.map((preview, index) => (
+                        <div key={index} className="flex items-center gap-3 p-2 border border-dashed rounded">
+                             <FileUploadField
+                                label={`${t('photoLabel')} ${index + 1}`} id={`additionalPhoto-${index}`}
+                                currentFileUrl={ (preview && !preview.startsWith('blob:')) ? preview : undefined } // Pass original server URL if preview is not a blob
+                                onFileChange={(file: File | null) => handleAdditionalPhotoChange(index, file)}
+                                accept="image/*" maxSizeMB={CLINIC_PHOTO_MAX_SIZE_MB}
+                                containerClassName="!mb-0"
+                            />
+                            {/* Removed explicit remove button, clearing file input handles this via handleAdditionalPhotoChange(index, null) */}
+                        </div>
+                    ))}
+                    {/* Add photo slot button might not be needed if always showing 5 slots */}
+                    <p className="text-xs text-gray-500">{t('clinicSpacePhotosHelperText', { count: 5, size: CLINIC_PHOTO_MAX_SIZE_MB })}</p>
+                </div>
+            </AccordionSection>
+
+
+            <div className="pt-6 border-t border-gray-200 mt-4">
+                <Button type="submit" variant="primary" size="lg" disabled={isLoading} leftIcon={<ArrowUpOnSquareIcon />}>
+                    {isLoading ? t('saving') : t('saveClinicProfileButton')}
+                </Button>
+            </div>
+        </form>
+    );
+};
+const ClinicMySpacesTabContent: React.FC = () => {
+    const { t, direction } = useTranslation();
+    usePageTitle('dashboardMyClinicsTab');
+    const { clinicSpaceListings, handleAddOrUpdateSpaceListing, handleDeleteSpaceListing, isLoading } = useOutletContext<OutletContextType>();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [currentListing, setCurrentListing] = useState<ClinicSpaceListing | null>(null);
+    const [listingFormData, setListingFormData] = useState<Partial<ClinicSpaceListing>>({});
+    const [photoFiles, setPhotoFiles] = useState<(File|null)[]>([]); // Max 5 photos
+    const [photoPreviews, setPhotoPreviews] = useState<(string|null)[]>([]);
+
+
+    const openModal = (listing?: ClinicSpaceListing) => {
+        setCurrentListing(listing || null);
+        setListingFormData(listing || { rentalPrice: 0, features:[] });
+        
+        const initialFiles = Array(5).fill(null);
+        const initialPreviews = Array(5).fill(null);
+        if (listing?.photos) {
+            listing.photos.slice(0,5).forEach((url, i) => initialPreviews[i] = url);
+        }
+        setPhotoFiles(initialFiles);
+        setPhotoPreviews(initialPreviews);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setCurrentListing(null);
+        setListingFormData({});
+        setPhotoFiles([]);
+        setPhotoPreviews([]);
+    };
+
+    const handleListingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value, type } = e.target;
+         if (name === "features") {
+            setListingFormData(prev => ({ ...prev, features: value.split(',').map(f => f.trim()).filter(f => f)}));
+        } else {
+            setListingFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) : value }));
+        }
+    };
+
+    const handlePhotoFileChange = (index: number, file: File | null) => {
+        const newFiles = [...photoFiles];
+        newFiles[index] = file;
+        setPhotoFiles(newFiles);
+
+        const newPreviews = [...photoPreviews];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                newPreviews[index] = reader.result as string; // Blob URL for new file
+                setPhotoPreviews([...newPreviews]);
+            };
+            reader.readAsDataURL(file);
+        } else { // File removed
+            newPreviews[index] = (currentListing?.photos && currentListing.photos[index]) ? currentListing.photos[index] : null; // Revert to original or null
+            setPhotoPreviews([...newPreviews]);
+        }
+    };
+
+    const handleListingSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const listingToSave: ClinicSpaceListing = {
+            id: currentListing?.id || `space-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+            name: listingFormData.name || t('unnamedSpace'),
+            description: listingFormData.description || '',
+            photos: photoPreviews.filter(p => p && !p.startsWith('blob:')) as string[], // Pass existing server URLs
+            rentalPrice: parseFloat(String(listingFormData.rentalPrice)) || 0,
+            rentalDuration: listingFormData.rentalDuration || t('perHour'),
+            rentalTerms: listingFormData.rentalTerms || '',
+            features: listingFormData.features || [],
+            // clinicId, clinicName, clinicAddress will be added by parent if it's a new listing
+        };
+        // Pass photoFiles (new File objects) for upload logic in shell
+        await handleAddOrUpdateSpaceListing(listingToSave, photoFiles);
+        closeModal();
+    };
+
+    const handleDelete = async (id: string) => {
+        if (confirm(t('deleteListingConfirm'))) {
+            await handleDeleteSpaceListing(id);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-accent flex items-center">
+                    <BriefcaseIcon className={`w-6 h-6 ${direction === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                    {t('manageYourClinicSpacesTitle')}
+                </h3>
+                <Button onClick={() => openModal()} leftIcon={<PlusCircleIcon />} variant="primary">
+                    {t('addNewClinicListingButton')}
+                </Button>
+            </div>
+
+            {isLoading && clinicSpaceListings.length === 0 ? <p>{t('loading')}</p> :
+            clinicSpaceListings.length === 0 ? (
+                <div className="text-center py-10 border-2 border-dashed border-gray-300 rounded-lg">
+                    <BuildingOfficeIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-lg text-gray-600 mb-4">{t('noClinicSpacesListedMessage')}</p>
+                    <Button onClick={() => openModal()} leftIcon={<PlusCircleIcon />} variant="primary" size="lg">
+                        {t('createFirstListingButton')}
+                    </Button>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {clinicSpaceListings.map(listing => (
+                        <div key={listing.id} className="bg-gray-50/50 p-4 rounded-lg shadow hover:shadow-xl transition-shadow">
+                            <img src={listing.photos?.[0] || `https://picsum.photos/seed/${listing.id}/400/250`} alt={listing.name} className="w-full h-40 object-cover rounded-md mb-3" />
+                            <h4 className="font-semibold text-lg text-textOnLight truncate" title={listing.name}>{listing.name}</h4>
+                            <p className="text-sm text-accent mb-1">${listing.rentalPrice} / {listing.rentalDuration}</p>
+                            <p className="text-xs text-gray-500 line-clamp-2 mb-3">{listing.description}</p>
+                            <div className="flex space-x-2">
+                                <Button size="sm" variant="light" onClick={() => openModal(listing)} leftIcon={<PencilIcon className="w-4 h-4"/>}>{t('editButtonLabel')}</Button>
+                                <Button size="sm" variant="danger" onClick={() => handleDelete(listing.id)} leftIcon={<TrashIcon className="w-4 h-4"/>}>{t('deleteButtonLabel')}</Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {isModalOpen && (
+                <Modal isOpen={isModalOpen} onClose={closeModal} title={currentListing ? t('editClinicSpaceListingTitle') : t('addNewClinicSpaceListingTitle')} size="2xl">
+                    <form onSubmit={handleListingSubmit} className="space-y-4">
+                        <InputField label={t('clinicSpaceNameLabel')} id="name" name="name" value={listingFormData.name || ''} onChange={handleListingChange} required />
+                        <TextareaField label={t('clinicSpaceDescriptionLabel')} id="description" name="description" value={listingFormData.description || ''} onChange={handleListingChange} rows={3} required />
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('clinicSpacePhotosLabel')}</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                {Array.from({ length: 5 }).map((_, index) => ( // Always render 5 slots
+                                    <FileUploadField 
+                                        key={index}
+                                        label={`${t('photoLabel')} ${index + 1}`} id={`photo-${index}`}
+                                        currentFileUrl={photoPreviews[index] && !photoPreviews[index]?.startsWith('blob:') ? photoPreviews[index] : undefined}
+                                        onFileChange={(file: File | null) => handlePhotoFileChange(index, file)}
+                                        accept="image/*" maxSizeMB={CLINIC_SPACE_PHOTO_MAX_SIZE_MB}
+                                        containerClassName="!mb-0"
+                                    />
+                                ))}
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500">{t('clinicSpacePhotosHelperText', { count: 5, size: CLINIC_SPACE_PHOTO_MAX_SIZE_MB })}</p>
+                        </div>
+
+                        <h4 className="text-md font-semibold pt-2 border-t border-gray-200">{t('rentalInformationTitle')}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <InputField label={t('rentalPriceField')} id="rentalPrice" name="rentalPrice" type="number" value={String(listingFormData.rentalPrice || '')} onChange={handleListingChange} required />
+                            <InputField label={t('rentalDurationField')} id="rentalDuration" name="rentalDuration" value={listingFormData.rentalDuration || ''} onChange={handleListingChange} placeholder={t('rentalDurationPlaceholder')} required />
+                        </div>
+                        <TextareaField label={t('rentalTermsField')} id="rentalTerms" name="rentalTerms" value={listingFormData.rentalTerms || ''} onChange={handleListingChange} rows={3} description={t('rentalTermsHelperText')} />
+                        
+                        <InputField label={t('featuresAndFacilitiesLabel')} id="features" name="features" 
+                            value={(listingFormData.features || []).join(', ')} onChange={handleListingChange} 
+                            description={t('featuresHelperText', { exampleFeatures: CLINIC_SPACE_FEATURES_LIST.slice(0,2).join(', ')})} 
+                        />
+
+                        <div className="flex justify-end space-x-3 pt-3">
+                            <Button type="button" variant="light" onClick={closeModal}>{t('cancelButtonLabel')}</Button>
+                            <Button type="submit" variant="primary" disabled={isLoading}>
+                                {isLoading ? t('saving') : (currentListing ? t('saveChangesButtonLabel') : t('addListingButtonLabel'))}
+                            </Button>
+                        </div>
+                    </form>
+                </Modal>
+            )}
+        </div>
+    );
+};
+const ClinicAnalyticsTabContent: React.FC = () => {
+    usePageTitle('dashboardAnalyticsTab');
+    const { t, direction } = useTranslation();
+    // const { analyticsData, isLoading } = useOutletContext<OutletContextType>();
+    // For now, use mock data or placeholders
+    return (
+        <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-accent flex items-center">
+                {/* <ChartBarIcon className={`w-6 h-6 ${direction === 'rtl' ? 'ml-2' : 'mr-2'}`}/> */}
+                {t('clinicEngagementMetricsTitle')}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50/50 p-6 rounded-lg shadow">
+                    <h4 className="text-lg font-medium text-textOnLight">{t('totalClinicViewsLabel')}</h4>
+                    <p className="text-3xl font-bold text-accent">1,234</p>
+                    <p className="text-xs text-gray-500">{t('past30DaysLabel')}</p>
+                </div>
+                <div className="bg-gray-50/50 p-6 rounded-lg shadow">
+                    <h4 className="text-lg font-medium text-textOnLight">{t('totalTherapistConnectionsLabel')}</h4>
+                    <p className="text-3xl font-bold text-accent">56</p>
+                    <p className="text-xs text-gray-500">{t('viaPlatformFeaturesLabel')}</p>
+                </div>
+            </div>
+            <div className="bg-gray-50/50 p-6 rounded-lg shadow text-center">
+                <InformationCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-600">{t('viewTrendsOverTimePlaceholder')}</p>
+            </div>
+        </div>
+    );
+};
 const ClinicSettingsTabContent: React.FC = () => {
     usePageTitle('dashboardSettingsTab');
     const { t } = useTranslation();
-    const { clinicData, clinicOwnerUser, handleOwnerUserSave, handleMembershipApplication, isLoading, membershipHistory } = ReactRouterDOM.useOutletContext<OutletContextType>();
+    const { clinicData, clinicOwnerUser, handleOwnerUserSave, handleMembershipApplication, isLoading, membershipHistory } = useOutletContext<OutletContextType>();
     
     const [ownerFormData, setOwnerFormData] = useState(clinicOwnerUser || {name: '', email: '', id: '', roles: [UserRole.CLINIC_OWNER], isActive: true });
     const [paymentReceiptFile, setPaymentReceiptFile] = useState<File | null>(null);
@@ -240,360 +589,6 @@ const ClinicSettingsTabContent: React.FC = () => {
         </div>
     );
 };
-
-const ClinicProfileTabContent: React.FC = () => {
-    const { t, direction } = useTranslation();
-    usePageTitle('dashboardClinicProfileTab');
-    const { clinicData, handleClinicProfileSave, isLoading } = ReactRouterDOM.useOutletContext<OutletContextType>();
-    
-    const [profileData, setProfileData] = useState<Partial<Clinic>>(clinicData || {});
-    const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
-    const [additionalPhotosFiles, setAdditionalPhotosFiles] = useState<(File|null)[]>(Array(5).fill(null));
-    const [additionalPhotoPreviews, setAdditionalPhotoPreviews] = useState<(string|null)[]>(Array(5).fill(null));
-
-    useEffect(() => {
-        setProfileData(clinicData || {});
-        setProfilePictureFile(null);
-        
-        const initialPreviews = Array(5).fill(null);
-        const initialFiles = Array(5).fill(null);
-        if (clinicData?.photos) {
-            clinicData.photos.slice(0, 5).forEach((url, i) => initialPreviews[i] = url);
-        }
-        setAdditionalPhotoPreviews(initialPreviews);
-        setAdditionalPhotosFiles(initialFiles);
-
-    }, [clinicData]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setProfileData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
-    
-    const handleAmenitiesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setProfileData(prev => ({ ...prev, amenities: e.target.value.split(',').map(a => a.trim()).filter(a => a) }));
-    };
-
-    const handleOperatingHoursChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const lines = e.target.value.split('\n');
-        const hours: Record<string, string> = {};
-        lines.forEach(line => {
-            const parts = line.split(':');
-            if (parts.length === 2) {
-                hours[parts[0].trim()] = parts[1].trim();
-            }
-        });
-        setProfileData(prev => ({ ...prev, operatingHours: hours }));
-    };
-
-    const handleProfilePictureFileChange = (file: File | null) => setProfilePictureFile(file);
-
-    const handleAdditionalPhotoChange = (index: number, file: File | null) => {
-        const newFiles = [...additionalPhotosFiles];
-        newFiles[index] = file;
-        setAdditionalPhotosFiles(newFiles);
-
-        const newPreviews = [...additionalPhotoPreviews];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                newPreviews[index] = reader.result as string; // Blob URL for new file
-                setAdditionalPhotoPreviews([...newPreviews]);
-            };
-            reader.readAsDataURL(file);
-        } else {
-            newPreviews[index] = null; // Cleared slot
-            setAdditionalPhotoPreviews([...newPreviews]);
-        }
-    };
-    
-    const addPhotoSlot = () => { // This function might not be needed if we always show 5 slots.
-        // If logic needs dynamic slots, this would be more complex.
-        // For fixed 5 slots, user just fills them.
-    };
-
-    const removePhotoSlot = (index: number) => { // This is more accurately "clearPhotoSlot"
-        handleAdditionalPhotoChange(index, null);
-    };
-
-
-    const handleProfileSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        // Pass the full additionalPhotosFiles and additionalPhotoPreviews arrays
-        await handleClinicProfileSave(
-            profileData, 
-            profilePictureFile, 
-            additionalPhotosFiles, 
-            additionalPhotoPreviews
-        );
-    };
-    
-    const [activeAccordion, setActiveAccordion] = useState<string | null>("businessProfile");
-
-    if (isLoading && !clinicData) {
-      return <div className="p-6 text-center text-textOnLight">{t('loading')}</div>;
-    }
-
-    return (
-        <form onSubmit={handleProfileSubmit} className="space-y-3">
-            <h2 className="text-2xl font-semibold text-textOnLight border-b border-gray-200 pb-4 mb-3 px-4 sm:px-0">{t('editClinicProfile')}</h2>
-            <AccordionSection titleKey="clinicBusinessProfileTitle" icon={<BuildingOfficeIcon />} isOpen={activeAccordion === "businessProfile"} onClick={() => setActiveAccordion(activeAccordion === "businessProfile" ? null : "businessProfile")}>
-                <FileUploadField
-                    label={t('clinicProfilePictureLabel')} id="clinicProfilePictureUrl"
-                    currentFileUrl={profileData.profilePictureUrl || clinicData?.profilePictureUrl}
-                    onFileChange={handleProfilePictureFileChange}
-                    accept="image/*" maxSizeMB={PROFILE_PICTURE_MAX_SIZE_MB}
-                    description={t('uploadProfilePictureDescription', {size: PROFILE_PICTURE_MAX_SIZE_MB})}
-                    required={!profileData.profilePictureUrl && !clinicData?.profilePictureUrl}
-                />
-                <InputField label={t('clinicBusinessName')} id="name" name="name" value={profileData.name || ''} onChange={handleChange} required />
-                <TextareaField label={t('clinicProfileDescription')} id="description" name="description" value={profileData.description || ''} onChange={handleChange} rows={4} description={t('clinicDescriptionHelperText')} />
-            </AccordionSection>
-
-            <AccordionSection titleKey="contactAndLocationTitle" icon={<MapPinIcon />} isOpen={activeAccordion === "contactLocation"} onClick={() => setActiveAccordion(activeAccordion === "contactLocation" ? null : "contactLocation")}>
-                 <InputField label={t('clinicFullAddressLabel')} id="address" name="address" value={profileData.address || ''} onChange={handleChange} required />
-                 <InputField label={t('contactWhatsAppNumber')} id="whatsappNumber" name="whatsappNumber" type="tel" value={profileData.whatsappNumber || ''} onChange={handleChange} required />
-            </AccordionSection>
-
-            <AccordionSection titleKey="operatingHoursAndAmenitiesTitle" icon={<ClockIcon />} isOpen={activeAccordion === "hoursAmenities"} onClick={() => setActiveAccordion(activeAccordion === "hoursAmenities" ? null : "hoursAmenities")}>
-                <TextareaField label={t('operatingHoursLabel')} id="operatingHours" name="operatingHours" 
-                    value={profileData.operatingHours ? Object.entries(profileData.operatingHours).map(([day, time]) => `${day}: ${time}`).join('\n') : ''}
-                    onChange={handleOperatingHoursChange} rows={3} description={t('operatingHoursHelperText')} 
-                />
-                <InputField label={t('generalAmenitiesLabel')} id="amenities" name="amenities" 
-                    value={(profileData.amenities || []).join(', ')} 
-                    onChange={handleAmenitiesChange} 
-                    description={t('generalAmenitiesHelperText')}
-                />
-            </AccordionSection>
-
-            <AccordionSection titleKey="additionalClinicPhotosTitle" icon={<PhotoIcon />} isOpen={activeAccordion === "additionalPhotos"} onClick={() => setActiveAccordion(activeAccordion === "additionalPhotos" ? null : "additionalPhotos")}>
-                <div className="space-y-4">
-                    {additionalPhotoPreviews.map((preview, index) => (
-                        <div key={index} className="flex items-center gap-3 p-2 border border-dashed rounded">
-                             <FileUploadField
-                                label={`${t('photoLabel')} ${index + 1}`} id={`additionalPhoto-${index}`}
-                                currentFileUrl={ (preview && !preview.startsWith('blob:')) ? preview : undefined } // Pass original server URL if preview is not a blob
-                                onFileChange={(file) => handleAdditionalPhotoChange(index, file)}
-                                accept="image/*" maxSizeMB={CLINIC_PHOTO_MAX_SIZE_MB}
-                                containerClassName="!mb-0"
-                            />
-                            {/* Removed explicit remove button, clearing file input handles this via handleAdditionalPhotoChange(index, null) */}
-                        </div>
-                    ))}
-                    {/* Add photo slot button might not be needed if always showing 5 slots */}
-                    <p className="text-xs text-gray-500">{t('clinicSpacePhotosHelperText', { count: 5, size: CLINIC_PHOTO_MAX_SIZE_MB })}</p>
-                </div>
-            </AccordionSection>
-
-
-            <div className="pt-6 border-t border-gray-200 mt-4">
-                <Button type="submit" variant="primary" size="lg" disabled={isLoading} leftIcon={<ArrowUpOnSquareIcon />}>
-                    {isLoading ? t('saving') : t('saveClinicProfileButton')}
-                </Button>
-            </div>
-        </form>
-    );
-};
-const ClinicMySpacesTabContent: React.FC = () => {
-    const { t, direction } = useTranslation();
-    usePageTitle('dashboardMyClinicsTab');
-    const { clinicSpaceListings, handleAddOrUpdateSpaceListing, handleDeleteSpaceListing, isLoading } = ReactRouterDOM.useOutletContext<OutletContextType>();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentListing, setCurrentListing] = useState<ClinicSpaceListing | null>(null);
-    const [listingFormData, setListingFormData] = useState<Partial<ClinicSpaceListing>>({});
-    const [photoFiles, setPhotoFiles] = useState<(File|null)[]>([]); // Max 5 photos
-    const [photoPreviews, setPhotoPreviews] = useState<(string|null)[]>([]);
-
-
-    const openModal = (listing?: ClinicSpaceListing) => {
-        setCurrentListing(listing || null);
-        setListingFormData(listing || { rentalPrice: 0, features:[] });
-        
-        const initialFiles = Array(5).fill(null);
-        const initialPreviews = Array(5).fill(null);
-        if (listing?.photos) {
-            listing.photos.slice(0,5).forEach((url, i) => initialPreviews[i] = url);
-        }
-        setPhotoFiles(initialFiles);
-        setPhotoPreviews(initialPreviews);
-        setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setCurrentListing(null);
-        setListingFormData({});
-        setPhotoFiles([]);
-        setPhotoPreviews([]);
-    };
-
-    const handleListingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value, type } = e.target;
-         if (name === "features") {
-            setListingFormData(prev => ({ ...prev, features: value.split(',').map(f => f.trim()).filter(f => f)}));
-        } else {
-            setListingFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) : value }));
-        }
-    };
-
-    const handlePhotoFileChange = (index: number, file: File | null) => {
-        const newFiles = [...photoFiles];
-        newFiles[index] = file;
-        setPhotoFiles(newFiles);
-
-        const newPreviews = [...photoPreviews];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                newPreviews[index] = reader.result as string; // Blob URL for new file
-                setPhotoPreviews([...newPreviews]);
-            };
-            reader.readAsDataURL(file);
-        } else { // File removed
-            newPreviews[index] = (currentListing?.photos && currentListing.photos[index]) ? currentListing.photos[index] : null; // Revert to original or null
-            setPhotoPreviews([...newPreviews]);
-        }
-    };
-
-    const handleListingSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const listingToSave: ClinicSpaceListing = {
-            id: currentListing?.id || `space-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-            name: listingFormData.name || t('unnamedSpace'),
-            description: listingFormData.description || '',
-            photos: photoPreviews.filter(p => p && !p.startsWith('blob:')) as string[], // Pass existing server URLs
-            rentalPrice: parseFloat(String(listingFormData.rentalPrice)) || 0,
-            rentalDuration: listingFormData.rentalDuration || t('perHour'),
-            rentalTerms: listingFormData.rentalTerms || '',
-            features: listingFormData.features || [],
-            // clinicId, clinicName, clinicAddress will be added by parent if it's a new listing
-        };
-        // Pass photoFiles (new File objects) for upload logic in shell
-        await handleAddOrUpdateSpaceListing(listingToSave, photoFiles);
-        closeModal();
-    };
-
-    const handleDelete = async (id: string) => {
-        if (confirm(t('deleteListingConfirm'))) {
-            await handleDeleteSpaceListing(id);
-        }
-    };
-
-    return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-accent flex items-center">
-                    <BriefcaseIcon className={`w-6 h-6 ${direction === 'rtl' ? 'ml-2' : 'mr-2'}`} />
-                    {t('manageYourClinicSpacesTitle')}
-                </h3>
-                <Button onClick={() => openModal()} leftIcon={<PlusCircleIcon />} variant="primary">
-                    {t('addNewClinicListingButton')}
-                </Button>
-            </div>
-
-            {isLoading && clinicSpaceListings.length === 0 ? <p>{t('loading')}</p> :
-            clinicSpaceListings.length === 0 ? (
-                <div className="text-center py-10 border-2 border-dashed border-gray-300 rounded-lg">
-                    <BuildingOfficeIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-lg text-gray-600 mb-4">{t('noClinicSpacesListedMessage')}</p>
-                    <Button onClick={() => openModal()} leftIcon={<PlusCircleIcon />} variant="primary" size="lg">
-                        {t('createFirstListingButton')}
-                    </Button>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {clinicSpaceListings.map(listing => (
-                        <div key={listing.id} className="bg-gray-50/50 p-4 rounded-lg shadow hover:shadow-xl transition-shadow">
-                            <img src={listing.photos?.[0] || `https://picsum.photos/seed/${listing.id}/400/250`} alt={listing.name} className="w-full h-40 object-cover rounded-md mb-3" />
-                            <h4 className="font-semibold text-lg text-textOnLight truncate" title={listing.name}>{listing.name}</h4>
-                            <p className="text-sm text-accent mb-1">${listing.rentalPrice} / {listing.rentalDuration}</p>
-                            <p className="text-xs text-gray-500 line-clamp-2 mb-3">{listing.description}</p>
-                            <div className="flex space-x-2">
-                                <Button size="sm" variant="light" onClick={() => openModal(listing)} leftIcon={<PencilIcon className="w-4 h-4"/>}>{t('editButtonLabel')}</Button>
-                                <Button size="sm" variant="danger" onClick={() => handleDelete(listing.id)} leftIcon={<TrashIcon className="w-4 h-4"/>}>{t('deleteButtonLabel')}</Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {isModalOpen && (
-                <Modal isOpen={isModalOpen} onClose={closeModal} title={currentListing ? t('editClinicSpaceListingTitle') : t('addNewClinicSpaceListingTitle')} size="2xl">
-                    <form onSubmit={handleListingSubmit} className="space-y-4">
-                        <InputField label={t('clinicSpaceNameLabel')} id="name" name="name" value={listingFormData.name || ''} onChange={handleListingChange} required />
-                        <TextareaField label={t('clinicSpaceDescriptionLabel')} id="description" name="description" value={listingFormData.description || ''} onChange={handleListingChange} rows={3} required />
-                        
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('clinicSpacePhotosLabel')}</label>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                {Array.from({ length: 5 }).map((_, index) => ( // Always render 5 slots
-                                    <FileUploadField 
-                                        key={index}
-                                        label={`${t('photoLabel')} ${index + 1}`} id={`photo-${index}`}
-                                        currentFileUrl={photoPreviews[index] && !photoPreviews[index]?.startsWith('blob:') ? photoPreviews[index] : undefined}
-                                        onFileChange={(file) => handlePhotoFileChange(index, file)}
-                                        accept="image/*" maxSizeMB={CLINIC_SPACE_PHOTO_MAX_SIZE_MB}
-                                        containerClassName="!mb-0"
-                                    />
-                                ))}
-                            </div>
-                            <p className="mt-1 text-xs text-gray-500">{t('clinicSpacePhotosHelperText', { count: 5, size: CLINIC_SPACE_PHOTO_MAX_SIZE_MB })}</p>
-                        </div>
-
-                        <h4 className="text-md font-semibold pt-2 border-t border-gray-200">{t('rentalInformationTitle')}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <InputField label={t('rentalPriceField')} id="rentalPrice" name="rentalPrice" type="number" value={String(listingFormData.rentalPrice || '')} onChange={handleListingChange} required />
-                            <InputField label={t('rentalDurationField')} id="rentalDuration" name="rentalDuration" value={listingFormData.rentalDuration || ''} onChange={handleListingChange} placeholder={t('rentalDurationPlaceholder')} required />
-                        </div>
-                        <TextareaField label={t('rentalTermsField')} id="rentalTerms" name="rentalTerms" value={listingFormData.rentalTerms || ''} onChange={handleListingChange} rows={3} description={t('rentalTermsHelperText')} />
-                        
-                        <InputField label={t('featuresAndFacilitiesLabel')} id="features" name="features" 
-                            value={(listingFormData.features || []).join(', ')} onChange={handleListingChange} 
-                            description={t('featuresHelperText', { exampleFeatures: CLINIC_SPACE_FEATURES_LIST.slice(0,2).join(', ')})} 
-                        />
-
-                        <div className="flex justify-end space-x-3 pt-3">
-                            <Button type="button" variant="light" onClick={closeModal}>{t('cancelButtonLabel')}</Button>
-                            <Button type="submit" variant="primary" disabled={isLoading}>
-                                {isLoading ? t('saving') : (currentListing ? t('saveChangesButtonLabel') : t('addListingButtonLabel'))}
-                            </Button>
-                        </div>
-                    </form>
-                </Modal>
-            )}
-        </div>
-    );
-};
-const ClinicAnalyticsTabContent: React.FC = () => {
-    usePageTitle('dashboardAnalyticsTab');
-    const { t, direction } = useTranslation();
-    // const { analyticsData, isLoading } = useOutletContext<OutletContextType>();
-    // For now, use mock data or placeholders
-    return (
-        <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-accent flex items-center">
-                {/* <ChartBarIcon className={`w-6 h-6 ${direction === 'rtl' ? 'ml-2' : 'mr-2'}`}/> */}
-                {t('clinicEngagementMetricsTitle')}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gray-50/50 p-6 rounded-lg shadow">
-                    <h4 className="text-lg font-medium text-textOnLight">{t('totalClinicViewsLabel')}</h4>
-                    <p className="text-3xl font-bold text-accent">1,234</p>
-                    <p className="text-xs text-gray-500">{t('past30DaysLabel')}</p>
-                </div>
-                <div className="bg-gray-50/50 p-6 rounded-lg shadow">
-                    <h4 className="text-lg font-medium text-textOnLight">{t('totalTherapistConnectionsLabel')}</h4>
-                    <p className="text-3xl font-bold text-accent">56</p>
-                    <p className="text-xs text-gray-500">{t('viaPlatformFeaturesLabel')}</p>
-                </div>
-            </div>
-            <div className="bg-gray-50/50 p-6 rounded-lg shadow text-center">
-                <InformationCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600">{t('viewTrendsOverTimePlaceholder')}</p>
-            </div>
-        </div>
-    );
-};
 const ClinicOwnerDashboardPageShell: React.FC = () => {
     const { user: authContextUser, firebaseUser, updateUserAuthContext } = useAuth();
     const { t } = useTranslation();
@@ -650,12 +645,12 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             // Fetch Clinic Spaces for this clinic
             const spacesQuery = query(collection(db, 'clinicSpaces'), where('clinicId', '==', currentClinicData.id));
             const spacesSnapshot = await getDocs(spacesQuery);
-            setClinicSpaceListings(spacesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as ClinicSpaceListing)));
+            setClinicSpaceListings(spacesSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ClinicSpaceListing)));
             
             // Fetch membership history
             const historyCollectionRef = collection(db, `clinicsData/${currentClinicData.id}/membershipHistory`);
             const historyQuerySnapshot = await getDocs(query(historyCollectionRef, orderBy("date", "desc"))); 
-            setMembershipHistory(historyQuerySnapshot.docs.map(d => ({id: d.id, ...d.data()} as MembershipHistoryItem)));
+            setMembershipHistory(historyQuerySnapshot.docs.map((d: any) => ({id: d.id, ...d.data()} as MembershipHistoryItem)));
 
 
         } catch (error) {
@@ -689,10 +684,10 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             if (profilePicFile) {
                 const filePath = `clinic_profiles/${clinicData.id}/profile_picture/${profilePicFile.name}-${Date.now()}`;
                 dataToSave.profilePictureUrl = await uploadFileToFirebase(profilePicFile, filePath);
-                 if(oldProfilePicUrl && oldProfilePicUrl !== dataToSave.profilePictureUrl) await deleteFileFromFirebase(oldProfilePicUrl).catch(e=>console.warn("Old clinic profile pic delete failed",e));
+                 if(oldProfilePicUrl && oldProfilePicUrl !== dataToSave.profilePictureUrl) await deleteFileFromFirebase(oldProfilePicUrl).catch((e: any)=>console.warn("Old clinic profile pic delete failed",e));
             } else if (updatedProfile.profilePictureUrl === null && oldProfilePicUrl) { 
-                 await deleteFileFromFirebase(oldProfilePicUrl).catch(e=>console.warn("Clinic profile pic delete failed",e));
-                 dataToSave.profilePictureUrl = undefined; // Ensure it's set to undefined in Firestore
+                 await deleteFileFromFirebase(oldProfilePicUrl).catch((e: any)=>console.warn("Clinic profile pic delete failed",e));
+                 dataToSave.profilePictureUrl = undefined;
             }
 
 
@@ -709,14 +704,14 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
                         const uploadedUrl = await uploadFileToFirebase(newFile, filePath);
                         finalPhotoUrls.push(uploadedUrl);
                         if (originalUrlInSlot && originalUrlInSlot !== uploadedUrl) {
-                            await deleteFileFromFirebase(originalUrlInSlot).catch(e => console.warn("Old additional photo (replaced) delete failed", e));
+                            await deleteFileFromFirebase(originalUrlInSlot).catch((e: any) => console.warn("Old additional photo (replaced) delete failed", e));
                         }
                     } else if (previewUrl && !previewUrl.startsWith('blob:') && originalServerPhotos.includes(previewUrl)) {
                         // No new file, and the preview is an existing server URL that was part of originalPhotos: keep it
                         finalPhotoUrls.push(previewUrl);
                     } else if (originalUrlInSlot && !previewUrl) {
                         // An existing server URL was there, but preview is now null (meaning user cleared it in UI)
-                        await deleteFileFromFirebase(originalUrlInSlot).catch(e => console.warn("Old additional photo (cleared) delete failed", e));
+                        await deleteFileFromFirebase(originalUrlInSlot).catch((e: any) => console.warn("Old additional photo (cleared) delete failed", e));
                     }
                 }
             }
@@ -729,7 +724,7 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
                     // It should have been handled by the loop above if it was cleared or replaced.
                     // This is a safeguard but might be redundant if the loop is perfect.
                     // Could be useful if array was shortened.
-                     await deleteFileFromFirebase(oldUrl).catch(e => console.warn("Old additional photo (fallback delete) failed", e));
+                     await deleteFileFromFirebase(oldUrl).catch((e: any) => console.warn("Old additional photo (fallback delete) failed", e));
                 }
             });
 
@@ -754,7 +749,7 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             if (receiptFile) {
                 const filePath = `clinic_payment_receipts/${clinicData.id}/${receiptFile.name}-${Date.now()}`;
                 paymentReceiptUrl = await uploadFileToFirebase(receiptFile, filePath);
-                if (oldReceiptUrl && oldReceiptUrl !== paymentReceiptUrl) await deleteFileFromFirebase(oldReceiptUrl).catch(e=>console.warn("Old clinic receipt delete failed",e));
+                if (oldReceiptUrl && oldReceiptUrl !== paymentReceiptUrl) await deleteFileFromFirebase(oldReceiptUrl).catch((e: any)=>console.warn("Old clinic receipt delete failed",e));
             }
             if (!paymentReceiptUrl) {
                 alert(t('paymentReceiptRequiredError')); setIsLoading(false); return;
@@ -825,14 +820,14 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
                     const uploadedUrl = await uploadFileToFirebase(newFile, filePath);
                     finalPhotoUrls.push(uploadedUrl);
                     if (originalUrlInSlot && originalUrlInSlot !== uploadedUrl) {
-                        await deleteFileFromFirebase(originalUrlInSlot).catch(e => console.warn("Old space photo (replaced) delete failed", e));
+                        await deleteFileFromFirebase(originalUrlInSlot).catch((e: any) => console.warn("Old space photo (replaced) delete failed", e));
                     }
                 } else if (originalUrlInSlot && listing.photos?.includes(originalUrlInSlot)) { 
                     // No new file, and original URL was part of the submitted listing's photos (meaning it wasn't cleared in UI)
                     finalPhotoUrls.push(originalUrlInSlot);
                 } else if (originalUrlInSlot && (!listing.photos || !listing.photos.includes(originalUrlInSlot))) {
                     // Original URL existed, but it's not in the submitted listing.photos (meaning it was cleared)
-                    await deleteFileFromFirebase(originalUrlInSlot).catch(e => console.warn("Old space photo (cleared) delete failed", e));
+                    await deleteFileFromFirebase(originalUrlInSlot).catch((e: any) => console.warn("Old space photo (cleared) delete failed", e));
                 }
             }
             listingToSave.photos = finalPhotoUrls;
@@ -860,7 +855,7 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             const listingToDelete = clinicSpaceListings.find(l => l.id === listingId);
             if (listingToDelete?.photos) {
                 for (const photoUrl of listingToDelete.photos) {
-                    await deleteFileFromFirebase(photoUrl).catch(e => console.warn("Space photo delete during listing delete failed", e));
+                    await deleteFileFromFirebase(photoUrl).catch((e: any) => console.warn("Space photo delete during listing delete failed", e));
                 }
             }
             await deleteDoc(doc(db, 'clinicSpaces', listingId));
@@ -903,19 +898,18 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
 
     return (
         <DashboardLayout role={UserRole.CLINIC_OWNER}>
-            <ReactRouterDOM.Outlet context={outletContextValue} />
+            <Outlet context={outletContextValue} />
         </DashboardLayout>
     );
 };
 
 export const ClinicOwnerDashboardRoutes = () => (
-    <ReactRouterDOM.Routes>
-        <ReactRouterDOM.Route element={<ClinicOwnerDashboardPageShell />}>
-            <ReactRouterDOM.Route index element={<ClinicProfileTabContent />} />
-            <ReactRouterDOM.Route path="my-clinics" element={<ClinicMySpacesTabContent />} /> {/* Renamed from my-spaces to my-clinics in nav */}
-            <ReactRouterDOM.Route path="analytics" element={<ClinicAnalyticsTabContent />} />
-            <ReactRouterDOM.Route path="settings" element={<ClinicSettingsTabContent />} />
-        </ReactRouterDOM.Route>
-    </ReactRouterDOM.Routes>
+    <Routes>
+        <Route element={<ClinicOwnerDashboardPageShell />}>
+            <Route index element={<ClinicProfileTabContent />} />
+            <Route path="my-clinics" element={<ClinicMySpacesTabContent />} /> {/* Renamed from my-spaces to my-clinics in nav */}
+            <Route path="analytics" element={<ClinicAnalyticsTabContent />} />
+            <Route path="settings" element={<ClinicSettingsTabContent />} />
+        </Route>
+    </Routes>
 );
-

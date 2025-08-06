@@ -95,6 +95,7 @@ export const TherapistDetailModal: React.FC<TherapistDetailModalProps> = ({ ther
                     >
                         {isFavorite ? t('removeFromFavorites') : t('addToFavorites')}
                     </Button>
+                    {therapist.whatsappNumber && (
                     <Button 
                         variant="ghost" 
                         size="md" 
@@ -105,6 +106,7 @@ export const TherapistDetailModal: React.FC<TherapistDetailModalProps> = ({ ther
                     >
                         {t('connectOnWhatsApp')}
                     </Button>
+                    )}
                      <Button
                         isFullWidth
                         onClick={handleShareProfile}

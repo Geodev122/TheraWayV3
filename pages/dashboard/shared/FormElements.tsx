@@ -1,9 +1,8 @@
 
 import React, { ChangeEvent, useState, useEffect } from 'react';
-import { InformationCircleIcon, ArrowUpOnSquareIcon, XCircleIcon } from '../../../components/icons'; // Added XCircleIcon
+import { InformationCircleIcon, ArrowUpOnSquareIcon, XCircleIcon } from '../../../components/icons';
 import { useTranslation } from '../../../hooks/useTranslation'; 
-import * as fireStorage from "firebase/storage";
-import { storage } from '../../../firebase'; // Import Firebase storage instance
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -121,13 +120,14 @@ export const SelectField: React.FC<SelectProps> = ({
   );
 };
 
-export const uploadFileToFirebase = async (
+export const uploadFileToFirebase = (
   file: File, 
   path: string,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  const storageRef = fireStorage.ref(storage, path);
-  const uploadTask = fireStorage.uploadBytesResumable(storageRef, file);
+  const storage = getStorage();
+  const storageRef = ref(storage, path);
+  const uploadTask = uploadBytesResumable(storageRef, file);
 
   return new Promise((resolve, reject) => {
     uploadTask.on('state_changed',
@@ -135,15 +135,15 @@ export const uploadFileToFirebase = async (
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         if (onProgress) onProgress(progress);
       },
-      (error) => {
+      (error: any) => {
         console.error("Firebase upload error:", error);
         reject(error);
       },
       async () => {
         try {
-          const downloadURL = await fireStorage.getDownloadURL(uploadTask.snapshot.ref);
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           resolve(downloadURL);
-        } catch (error) {
+        } catch (error: any) {
           console.error("Firebase getDownloadURL error:", error);
           reject(error);
         }
@@ -158,8 +158,9 @@ export const deleteFileFromFirebase = async (fileUrl: string): Promise<void> => 
     return;
   }
   try {
-    const fileRef = fireStorage.ref(storage, fileUrl);
-    await fireStorage.deleteObject(fileRef);
+    const storage = getStorage();
+    const fileRef = ref(storage, fileUrl);
+    await deleteObject(fileRef);
     console.log("File deleted successfully from Firebase Storage:", fileUrl);
   } catch (error: any) {
     if (error.code === 'storage/object-not-found') {
