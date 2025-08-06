@@ -10,11 +10,12 @@ import { DashboardLayout } from '../../../components/dashboard/shared/DashboardL
 import { Button } from '../../../components/common/Button';
 import { InputField, TextareaField, deleteFileFromFirebase } from '../../../components/dashboard/shared/FormElements';
 import { Modal } from '../../../components/common/Modal';
-import { 
-    UsersIcon, BuildingOfficeIcon, ChatBubbleLeftRightIcon, DocumentTextIcon, 
+import {
+    UsersIcon, BuildingOfficeIcon, ChatBubbleLeftRightIcon, DocumentTextIcon, ChartBarIcon,
     CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon, EyeIcon, PencilIcon, ArrowDownTrayIcon,
     CogIcon, TrashIcon
 } from '../../../components/icons';
+import { THERAPIST_MEMBERSHIP_FEE, CLINIC_MEMBERSHIP_FEE } from '../../../constants';
 import { db } from '../../../firebase';
 import { collection, doc, getDocs, updateDoc, setDoc, query, orderBy, serverTimestamp, Timestamp, writeBatch, where } from 'firebase/firestore';
 
@@ -30,6 +31,15 @@ interface OutletContextType {
   addActivityLogEntry: (logEntry: Omit<ActivityLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>) => Promise<void>;
   fetchData: () => Promise<void>;
   isLoading: boolean;
+  reportsData: ReportsData;
+}
+
+interface ReportsData {
+  totalUsers: number;
+  totalTherapists: number;
+  totalClinics: number;
+  activeMemberships: number;
+  membershipRevenue: number;
 }
 
 interface AddNoteModalProps {
@@ -468,6 +478,45 @@ const AdminCommunicationTabContent: React.FC = () => {
     );
 };
 
+const AdminReportsTabContent: React.FC = () => {
+    usePageTitle('dashboardReportsTab');
+    const { t } = useTranslation();
+    const { reportsData, isLoading } = useOutletContext<OutletContextType>();
+
+    return (
+        <div className="space-y-6 bg-primary p-4 sm:p-6 rounded-lg shadow-md text-textOnLight">
+            <h3 className="text-xl font-semibold text-accent flex items-center">
+                <ChartBarIcon className="w-6 h-6 mr-2"/>
+                {t('dashboardReportsTab')}
+            </h3>
+            {isLoading ? <p>{t('loading')}</p> : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 bg-gray-50/50 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-accent">{reportsData.totalUsers}</p>
+                        <p className="text-xs text-gray-500">{t('totalUsersLabel', { default: 'Total Users' })}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50/50 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-accent">{reportsData.totalTherapists}</p>
+                        <p className="text-xs text-gray-500">{t('totalTherapistApplicationsLabel')}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50/50 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-accent">{reportsData.totalClinics}</p>
+                        <p className="text-xs text-gray-500">{t('totalClinicsLabel')}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50/50 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-accent">{reportsData.activeMemberships}</p>
+                        <p className="text-xs text-gray-500">{t('activeMembershipsLabel', { default: 'Active Memberships' })}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50/50 rounded-lg text-center sm:col-span-2">
+                        <p className="text-2xl font-bold text-accent">${reportsData.membershipRevenue.toFixed(2)}</p>
+                        <p className="text-xs text-gray-500">{t('membershipRevenueLabel', { default: 'Membership Revenue' })}</p>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const AdminActivityLogTabContent: React.FC = () => {
     usePageTitle('dashboardActivityLogTab');
     const { t } = useTranslation();
@@ -516,6 +565,22 @@ const AdminDashboardPageShell: React.FC = () => {
     const [userInquiriesList, setUserInquiriesList] = useState<UserInquiry[]>([]);
     const [activityLogsList, setActivityLogsList] = useState<ActivityLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const reportsData = useMemo<ReportsData>(() => {
+        const totalTherapists = therapistsList.length;
+        const totalClinics = clinicsList.length;
+        const activeTherapistMemberships = therapistsList.filter(t => t.membershipRenewalDate && new Date(t.membershipRenewalDate) > new Date()).length;
+        const activeClinicMemberships = clinicsList.filter(c => c.theraWayMembership?.renewalDate && new Date(c.theraWayMembership.renewalDate) > new Date()).length;
+        const activeMemberships = activeTherapistMemberships + activeClinicMemberships;
+        const membershipRevenue = activeTherapistMemberships * THERAPIST_MEMBERSHIP_FEE + activeClinicMemberships * CLINIC_MEMBERSHIP_FEE;
+        return {
+            totalUsers: totalTherapists + totalClinics,
+            totalTherapists,
+            totalClinics,
+            activeMemberships,
+            membershipRevenue,
+        };
+    }, [therapistsList, clinicsList]);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -630,12 +695,14 @@ const AdminDashboardPageShell: React.FC = () => {
         addActivityLogEntry,
         fetchData,
         isLoading,
+        reportsData,
     };
 
     const adminNavItems = [
-        { path: '', labelKey: 'dashboardTherapistsValidationTab', icon: <UsersIcon /> }, 
+        { path: '', labelKey: 'dashboardTherapistsValidationTab', icon: <UsersIcon /> },
         { path: 'clinic-approval', labelKey: 'dashboardClinicApprovalTab', icon: <BuildingOfficeIcon /> },
         { path: 'communication', labelKey: 'dashboardCommunicationTab', icon: <ChatBubbleLeftRightIcon /> },
+        { path: 'reports', labelKey: 'dashboardReportsTab', icon: <ChartBarIcon /> },
         { path: 'activity-log', labelKey: 'dashboardActivityLogTab', icon: <DocumentTextIcon /> }
     ];
 
@@ -652,6 +719,7 @@ export const AdminDashboardRoutes = () => (
             <Route index element={<AdminTherapistsValidationTabContent />} />
             <Route path="clinic-approval" element={<AdminClinicApprovalTabContent />} />
             <Route path="communication" element={<AdminCommunicationTabContent />} />
+            <Route path="reports" element={<AdminReportsTabContent />} />
             <Route path="activity-log" element={<AdminActivityLogTabContent />} />
         </Route>
     </Routes>
