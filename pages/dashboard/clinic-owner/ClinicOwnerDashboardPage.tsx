@@ -56,7 +56,7 @@ interface AccordionSectionProps {
     badgeColor?: string;
 }
 const AccordionSection: React.FC<AccordionSectionProps> = ({ titleKey, icon, isOpen, onClick, children, badgeText, badgeColor }) => {
-    const { t, direction } = useTranslation();
+    const { t } = useTranslation();
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden">
             <button
@@ -87,7 +87,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({ titleKey, icon, isO
 };
 
 const ClinicProfileTabContent: React.FC = () => {
-    const { t, direction } = useTranslation();
+    const { t } = useTranslation();
     usePageTitle('dashboardClinicProfileTab');
     const { clinicData, handleClinicProfileSave, isLoading } = useOutletContext<OutletContextType>();
     
@@ -411,24 +411,60 @@ const ClinicMySpacesTabContent: React.FC = () => {
 };
 const ClinicAnalyticsTabContent: React.FC = () => {
     usePageTitle('dashboardAnalyticsTab');
-    const { t, direction } = useTranslation();
-    // const { analyticsData, isLoading } = useOutletContext<OutletContextType>();
-    // For now, use mock data or placeholders
+    const { t } = useTranslation();
+    const { clinicData } = useOutletContext<OutletContextType>();
+    const [analytics, setAnalytics] = useState<{ totalViews: number; therapistConnections: number } | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            if (!clinicData?.id) return;
+            try {
+                const docRef = doc(db, 'clinicAnalytics', clinicData.id);
+                const snapshot = await getDoc(docRef);
+                if (snapshot.exists()) {
+                    const data = snapshot.data() as { totalViews?: number; therapistConnections?: number };
+                    setAnalytics({
+                        totalViews: data.totalViews ?? 0,
+                        therapistConnections: data.therapistConnections ?? 0,
+                    });
+                } else {
+                    setAnalytics({ totalViews: 0, therapistConnections: 0 });
+                }
+            } catch (err) {
+                console.error('Error fetching analytics', err);
+                setError(t('unexpectedError'));
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAnalytics();
+    }, [clinicData?.id, t]);
+
+    if (isLoading) {
+        return <p>{t('loading')}...</p>;
+    }
+
+    if (error) {
+        return <p className="text-red-600">{error}</p>;
+    }
+
     return (
         <div className="space-y-6">
             <h3 className="text-xl font-semibold text-accent flex items-center">
-                {/* <ChartBarIcon className={`w-6 h-6 ${direction === 'rtl' ? 'ml-2' : 'mr-2'}`}/> */}
                 {t('clinicEngagementMetricsTitle')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalClinicViewsLabel')}</h4>
-                    <p className="text-3xl font-bold text-accent">1,234</p>
+                    <p className="text-3xl font-bold text-accent">{analytics?.totalViews.toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{t('past30DaysLabel')}</p>
                 </div>
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalTherapistConnectionsLabel')}</h4>
-                    <p className="text-3xl font-bold text-accent">56</p>
+                    <p className="text-3xl font-bold text-accent">{analytics?.therapistConnections.toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{t('viaPlatformFeaturesLabel')}</p>
                 </div>
             </div>
