@@ -648,6 +648,46 @@ const AdminDashboardPageShell: React.FC = () => {
         }
     }, [user]);
 
+    const notifyStatusChange = useCallback(async (
+        targetType: 'therapist' | 'clinic',
+        targetId: string,
+        status: string,
+        notes?: string
+    ) => {
+        try {
+            const response = await fetch('/api/sendStatusNotification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetType, targetId, status, notes }),
+            });
+            const result = await response.json().catch(() => ({}));
+            await addActivityLogEntry({
+                action: 'Status Notification',
+                targetId,
+                targetType,
+                details: {
+                    status,
+                    notes: notes || 'N/A',
+                    notificationResult: response.ok ? 'success' : 'failure',
+                    response: result,
+                },
+            });
+        } catch (error) {
+            console.error('Error sending status notification:', error);
+            await addActivityLogEntry({
+                action: 'Status Notification',
+                targetId,
+                targetType,
+                details: {
+                    status,
+                    notes: notes || 'N/A',
+                    notificationResult: 'error',
+                    error: (error as Error).message,
+                },
+            });
+        }
+    }, [addActivityLogEntry]);
+
     const handleTherapistStatusChange = async (therapistId: string, status: Therapist['accountStatus'], notes?: string) => {
         setIsLoading(true);
         try {
@@ -663,6 +703,7 @@ const AdminDashboardPageShell: React.FC = () => {
 
             await updateDoc(therapistDocRef, { ...updates, updatedAt: serverTimestamp() });
             setTherapistsList(prev => prev.map(t => t.id === therapistId ? { ...t, ...updates } : t));
+            await notifyStatusChange('therapist', therapistId, status, notes);
             await addActivityLogEntry({
                 action: 'Therapist Status Change',
                 targetId: therapistId,
@@ -684,7 +725,13 @@ const AdminDashboardPageShell: React.FC = () => {
             
             await updateDoc(clinicDocRef, { ...updates, updatedAt: serverTimestamp() });
             setClinicsList(prev => prev.map(c => c.id === clinicId ? { ...c, ...updates } : c));
-             await addActivityLogEntry({ action: 'Clinic Status Change', targetId: clinicId, targetType: 'clinic', details: { newStatus: status, notes: notes || 'N/A' }});
+            await notifyStatusChange('clinic', clinicId, status, notes);
+            await addActivityLogEntry({
+                action: 'Clinic Status Change',
+                targetId: clinicId,
+                targetType: 'clinic',
+                details: { newStatus: status, notes: notes || 'N/A' },
+            });
         } catch (error) {
             console.error("Error changing clinic status:", error);
         }
