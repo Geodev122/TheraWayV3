@@ -308,3 +308,29 @@ npm run monitor-firestore
     5.  If deploying to a subdirectory (e.g., `/app/`), ensure the `base` path in `vite.config.ts` is set correctly (`base: '/app/'`) before building.
 
 **Remember to configure Firebase correctly in `firebase.ts` AND ENABLE FIRESTORE DATABASE in the Firebase console, and set up Firestore and Storage security rules before deploying to production.**
+## Data Connect Deployment
+
+To keep Firestore and Postgres in sync, Cloud Functions forward document changes to Firebase Data Connect.
+
+1. Deploy the Data Connect schema and connector:
+   ```bash
+   firebase dataconnect:deploy
+   ```
+2. Configure the Cloud Functions environment with your Data Connect endpoint. For local development copy `.env.example` to `.env` and fill in the values:
+   ```
+   DATA_CONNECT_ENDPOINT=https://us-central1-your-project.fdc.googleapis.com/graphql
+   DATA_CONNECT_SERVICE_ID=theraway-v3
+   DATA_CONNECT_LOCATION=us-central1
+   ```
+   For deployed functions set the variables:
+   ```bash
+   firebase functions:config:set dataconnect.endpoint="https://us-central1-your-project.fdc.googleapis.com/graphql" \
+     dataconnect.service_id="theraway-v3" dataconnect.location="us-central1"
+   ```
+3. Build and deploy the functions:
+   ```bash
+   npm --prefix functions run build
+   firebase deploy --only functions
+   ```
+
+Failed sync operations are retried automatically and logged for troubleshooting.
