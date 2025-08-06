@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default rule: deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /users/{userId} {
+      // Allow authenticated users to read their own document
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Allow authenticated users to create their own document (e.g., on first login)
+      allow create: if request.auth != null && request.auth.uid == userId &&
+                    request.resource.data.id == userId &&
+                    request.resource.data.email == request.auth.token.email &&
+                    request.resource.data.roles == ["client"] && // New users are clients by default
+                    // Only allow setting these fields on creation by a new user
+                    request.resource.data.keys().hasOnly([
+                        'id', 'email', 'roles', 'name', 'profilePictureUrl', 'lastLogin', 'createdAt', 'isActive'
+                    ]);
+
+      // Allow authenticated users to update their own document
+      allow update: if request.auth != null && request.auth.uid == userId &&
+                    // Prevent users from changing their own roles or admin-only fields
+                    !('roles' in request.resource.data) &&
+                    !('isDemoAccount' in request.resource.data) &&
+                    !('accountStatus' in request.resource.data) &&
+                    !('adminNotes' in request.resource.data) &&
+                    // Ensure only allowed fields are updated by the user themselves
+                    request.resource.data.keys().hasOnly([
+                        'name', 'profilePictureUrl', 'bio', 'specializations', 'languages',
+                        'lastLogin', 'membershipApplication', 'membershipRenewalDate'
+                    ]);
+
+
+      // Admin: Full read/write access to all user documents
+      allow read, write: if request.auth != null && "admin" in request.auth.token.roles;
+
+      // Therapist, Client, Clinic Owner: Read public profiles of therapists and clinic owners
+      // This rule allows reading of *all fields* of user documents that have 'therapist' or 'clinic_owner' roles.
+      // The client-side application is responsible for displaying only public fields.
+      allow read: if request.auth != null &&
+                     (
+                       "therapist" in request.auth.token.roles ||
+                       "client" in request.auth.token.roles ||
+                       "clinic_owner" in request.auth.token.roles
+                     ) &&
+                     resource.data.roles.hasAny(["therapist", "clinic_owner"]);
+    }
+
+    match /clinics/{clinicId} {
+      // Admin: Full read/write access to all clinic documents
+      allow read, write: if request.auth != null && "admin" in request.auth.token.roles;
+
+      // Clinic Owner: Read/write their own clinic document
+      // Assuming clinicId is linked to the clinic owner's userId or there's a field in clinic document
+      // like 'ownerId' that matches request.auth.uid
+      allow read, write: if request.auth != null && "clinic_owner" in request.auth.token.roles &&
+                         resource.data.ownerId == request.auth.uid;
+
+      // Therapists and Clients can read public clinic information
+      allow read: if request.auth != null &&
+                     ("therapist" in request.auth.token.roles || "client" in request.auth.token.roles);
+    }
+  }
+}
