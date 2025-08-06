@@ -2,11 +2,11 @@
 import React from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { UserRole } from '../../../types';
-import { 
-    BriefcaseIcon, BuildingOfficeIcon, ShieldCheckIcon, ChartBarIcon, CogIcon, UsersIcon, 
+import {
+    BriefcaseIcon, BuildingOfficeIcon, ShieldCheckIcon, ChartBarIcon, CogIcon, UsersIcon,
     DocumentDuplicateIcon, TagIcon, PhotoIcon, ChevronDownIcon, ChevronUpIcon,
-    ChatBubbleLeftRightIcon, DocumentTextIcon 
-} from '../../icons'; 
+    ChatBubbleLeftRightIcon, DocumentTextIcon, ClockIcon
+} from '../../icons';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface DashboardLayoutProps {
@@ -24,24 +24,31 @@ interface NavItem {
 }
 
 const therapistNavItems: NavItem[] = [
-  { path: '', labelKey: 'dashboardMyProfileTab', icon: <BriefcaseIcon />, therapistOnly: true }, 
+  { path: '', labelKey: 'dashboardMyProfileTab', icon: <BriefcaseIcon />, therapistOnly: true },
   { path: 'licenses', labelKey: 'dashboardLicensesTab', icon: <DocumentDuplicateIcon />, therapistOnly: true},
-  { path: 'space-rental', labelKey: 'dashboardSpaceRentalTab', icon: <BuildingOfficeIcon />, therapistOnly: true}, 
+  { path: 'analytics', labelKey: 'dashboardAnalyticsTab', icon: <ChartBarIcon />, therapistOnly: true},
+  { path: 'space-rental', labelKey: 'dashboardSpaceRentalTab', icon: <BuildingOfficeIcon />, therapistOnly: true},
   { path: 'settings', labelKey: 'dashboardSettingsTab', icon: <CogIcon />, therapistOnly: true },
 ];
 
 const clinicNavItems: NavItem[] = [
-  { path: '', labelKey: 'dashboardClinicProfileTab', icon: <BuildingOfficeIcon />, clinicOnly: true }, 
-  { path: 'my-clinics', labelKey: 'dashboardMyClinicsTab', icon: <BriefcaseIcon />, clinicOnly: true}, 
-  { path: 'analytics', labelKey: 'dashboardAnalyticsTab', icon: <ChartBarIcon />, clinicOnly: true}, 
-  { path: 'settings', labelKey: 'dashboardSettingsTab', icon: <CogIcon />, clinicOnly: true}, 
+  { path: '', labelKey: 'dashboardClinicProfileTab', icon: <BuildingOfficeIcon />, clinicOnly: true },
+  { path: 'my-clinics', labelKey: 'dashboardMyClinicsTab', icon: <BriefcaseIcon />, clinicOnly: true},
+  { path: 'bookings', labelKey: 'dashboardBookingsTab', icon: <ClockIcon />, clinicOnly: true},
+  { path: 'analytics', labelKey: 'dashboardAnalyticsTab', icon: <ChartBarIcon />, clinicOnly: true},
+  { path: 'settings', labelKey: 'dashboardSettingsTab', icon: <CogIcon />, clinicOnly: true},
 ];
 
 const adminNavItems: NavItem[] = [
-  { path: '', labelKey: 'dashboardTherapistsValidationTab', icon: <UsersIcon /> }, 
+  { path: '', labelKey: 'dashboardTherapistsValidationTab', icon: <UsersIcon /> },
   { path: 'clinic-approval', labelKey: 'dashboardClinicApprovalTab', icon: <BuildingOfficeIcon /> },
   { path: 'communication', labelKey: 'dashboardCommunicationTab', icon: <ChatBubbleLeftRightIcon /> },
+
+  { path: 'reports', labelKey: 'dashboardReportsTab', icon: <ChartBarIcon /> },
   { path: 'activity-log', labelKey: 'dashboardActivityLogTab', icon: <DocumentTextIcon /> }
+  { path: 'activity-log', labelKey: 'dashboardActivityLogTab', icon: <DocumentTextIcon /> },
+  { path: 'site-management', labelKey: 'dashboardSiteManagementTab', icon: <CogIcon /> }
+
 ];
 
 

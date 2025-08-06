@@ -4,7 +4,7 @@ import { Therapist, UserRole, FavoriteTherapist } from '../types';
 import { APP_NAME, AVAILABILITY_OPTIONS, SPECIALIZATIONS_LIST, LANGUAGES_LIST } from '../constants';
 import { TherapistDetailModal } from '../components/TherapistDetailModal';
 import { Button } from '../components/common/Button';
-import { SpotlightTherapistCard } from '../components/therapist-finder/SwipableTherapistCard';
+import { SwipeableTherapistCard } from '../components/therapist-finder/SwipeableTherapistCard';
 import { TherapistCard } from '../components/TherapistCard';
 import { TherapistMapView } from '../components/therapist-finder/TherapistMapView';
 import { Modal } from '../components/common/Modal';
@@ -499,7 +499,7 @@ export const TherapistFinderPage: React.FC = () => {
               key={currentTherapistForSpotlight.id + currentIndex}
               className={`w-full h-full ${getCardAnimationClass()}`}
             >
-                <SpotlightTherapistCard
+                <SwipeableTherapistCard
                     therapist={currentTherapistForSpotlight}
                     onViewProfile={() => handleViewProfile(currentTherapistForSpotlight)}
                 />

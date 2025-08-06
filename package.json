@@ -16,10 +16,11 @@
     "generate-security-rules": "node scripts/generateSecurityRules.js",
     "migrate-data": "node scripts/migrateData.js",
     "monitor-firestore": "node scripts/monitorFirestore.js",
-    "full-seed": "node scripts/fullSeed.js"
+    "full-seed": "node scripts/fullSeed.js",
+    "test": "vitest --environment jsdom"
   },
   "dependencies": {
-    "@firebase/data-connect": "^1.0.0",
+    "@firebase/data-connect": "^0.3.11",
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
     "@fortawesome/fontawesome-free": "^6.5.2",
     "@tanstack/react-query": "^5.51.1",
@@ -34,16 +35,20 @@
     "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
     "@types/leaflet": "^1.9.12",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.21",
     "dotenv": "^17.2.0",
+    "jsdom": "^26.1.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.9.2",
     "vite": "^7.0.6",
-    "vite-plugin-pwa": "^1.0.2"
+    "vite-plugin-pwa": "^1.0.2",
+    "vitest": "^3.2.4"
   }
 }
