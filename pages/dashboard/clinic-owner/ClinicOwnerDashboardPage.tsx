@@ -25,6 +25,10 @@ import {
 } from '../../../components/icons';
 import { db } from '../../../firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc, Timestamp, orderBy } from 'firebase/firestore';
+import {
+  listMembershipHistory,
+  createMembershipHistoryItem
+} from '@firebasegen/default-connector';
 
 
 interface OutletContextType {
@@ -786,9 +790,11 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             setClinicSpaceListings(spacesSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ClinicSpaceListing)));
             
             // Fetch membership history
-            const historyCollectionRef = collection(db, `clinicsData/${currentClinicData.id}/membershipHistory`);
-            const historyQuerySnapshot = await getDocs(query(historyCollectionRef, orderBy("date", "desc"))); 
-            setMembershipHistory(historyQuerySnapshot.docs.map((d: any) => ({id: d.id, ...d.data()} as MembershipHistoryItem)));
+            const historyResp = await listMembershipHistory();
+            const items = (historyResp.data.membership_history || [])
+              .filter((h: MembershipHistoryItem) => h.clinicId === currentClinicData.id)
+              .sort((a: MembershipHistoryItem, b: MembershipHistoryItem) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setMembershipHistory(items);
 
 
         } catch (error) {
@@ -920,13 +926,13 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             await updateDoc(clinicDocRef, membershipUpdateForFirestore);
 
             const historyEntry: MembershipHistoryItem = {
-                id: `hist-${Date.now()}`, 
-                date: Timestamp.now().toDate().toISOString(),
+                id: `hist-${Date.now()}`,
+                clinicId: clinicData.id,
+                date: new Date().toISOString(),
                 action: t('membershipAppliedAction', { tier: STANDARD_MEMBERSHIP_TIER_NAME }),
                 details: t('receiptUploadedDetails')
             };
-            const historyDocRef = doc(collection(db, `clinicsData/${clinicData.id}/membershipHistory`), historyEntry.id);
-            await setDoc(historyDocRef, historyEntry);
+            await createMembershipHistoryItem(historyEntry);
 
             setClinicData(prev => prev ? ({ ...prev, ...membershipUpdateForState }) : null);
             setMembershipHistory(prev => [historyEntry, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));

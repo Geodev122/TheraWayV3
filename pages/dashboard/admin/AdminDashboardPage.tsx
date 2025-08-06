@@ -17,6 +17,13 @@ import {
 } from '../../../components/icons';
 import { THERAPIST_MEMBERSHIP_FEE, CLINIC_MEMBERSHIP_FEE } from '../../../constants';
 import { db } from '../../../firebase';
+import { collection, doc, getDocs, updateDoc, query, orderBy, serverTimestamp, Timestamp, writeBatch, where } from 'firebase/firestore';
+import {
+    listUserInquiries,
+    listActivityLogs,
+    updateUserInquiry,
+    createActivityLog
+} from '@firebasegen/default-connector';
 import { collection, doc, getDocs, updateDoc, setDoc, query, orderBy, serverTimestamp, Timestamp, writeBatch, where, startAfter, limit, QueryDocumentSnapshot } from 'firebase/firestore';
 
 
@@ -679,11 +686,11 @@ const AdminDashboardPageShell: React.FC = () => {
             const clinicsSnapshot = await getDocs(collection(db, 'clinicsData'));
             setClinicsList(clinicsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic)));
 
-            const inquiriesSnapshot = await getDocs(query(collection(db, 'userInquiries'), orderBy('date', 'desc')));
-            setUserInquiriesList(inquiriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserInquiry)));
+            const inquiriesResponse = await listUserInquiries();
+            setUserInquiriesList(inquiriesResponse.data.user_inquiries || []);
 
-            const activityLogsSnapshot = await getDocs(query(collection(db, 'activityLog'), orderBy('timestamp', 'desc')));
-            setActivityLogsList(activityLogsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog)));
+            const activityLogsResponse = await listActivityLogs();
+            setActivityLogsList(activityLogsResponse.data.activity_logs || []);
         } catch (error) {
             console.error("Error fetching admin data:", error);
         } finally {
@@ -706,7 +713,7 @@ const AdminDashboardPageShell: React.FC = () => {
             ...logEntry,
         };
         try {
-            await setDoc(doc(db, 'activityLog', newLog.id), newLog);
+            await createActivityLog(newLog);
             setActivityLogsList(prev => [newLog, ...prev]);
         } catch (error) {
             console.error("Error adding activity log:", error);
@@ -806,11 +813,10 @@ const AdminDashboardPageShell: React.FC = () => {
     const handleInquiryStatusChange = async (inquiryId: string, status: UserInquiry['status'], adminReply?: string) => {
         setIsLoading(true);
         try {
-            const inquiryDocRef = doc(db, 'userInquiries', inquiryId);
             const updates: Partial<UserInquiry> = { status };
             if (adminReply) updates.adminReply = adminReply;
 
-            await updateDoc(inquiryDocRef, { ...updates });
+            await updateUserInquiry(inquiryId, updates);
             setUserInquiriesList(prev => prev.map(i => i.id === inquiryId ? { ...i, ...updates } : i));
             await addActivityLogEntry({ action: 'Inquiry Status Change', targetId: inquiryId, targetType: 'user_inquiry', details: { newStatus: status }});
         } catch (error) {

@@ -105,3 +105,107 @@ query listClinicSpaceListings {
     isDemoAccount
   }
 }
+
+query listPracticeLocations {
+  practice_locations {
+    id
+    therapistId
+    address
+    lat
+    lng
+    isPrimary
+  }
+}
+
+query listCertifications {
+  certifications {
+    id
+    therapistId
+    name
+    fileUrl
+    uploadedAt
+    isVerified
+    verificationNotes
+    country
+  }
+}
+
+query listClinicServices {
+  clinic_services {
+    id
+    clinicId
+    name
+    price
+    durationMinutes
+  }
+}
+
+query listMembershipStatus {
+  membership_status {
+    id
+    clinicId
+    status
+    tierName
+    renewalDate
+    applicationDate
+    paymentReceiptUrl
+  }
+}
+
+query listMembershipHistory {
+  membership_history {
+    id
+    clinicId
+    date
+    action
+    details
+  }
+}
+
+query listSystemHealthMetrics {
+  system_health_metrics {
+    id
+    name
+    value
+    status
+  }
+}
+
+query listActivityLogs {
+  activity_logs {
+    id
+    timestamp
+    userId
+    userName
+    userRole
+    details
+    action
+    targetId
+    targetType
+  }
+}
+
+query listUserInquiries {
+  user_inquiries {
+    id
+    userId
+    userEmail
+    userName
+    subject
+    message
+    date
+    status
+    adminReply
+    priority
+    category
+  }
+}
+
+query listFavoriteTherapists {
+  favorite_therapists {
+    id
+    userId
+    therapistId
+    addedAt
+  }
+}
