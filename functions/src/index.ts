@@ -1,8 +1,10 @@
 /* eslint-disable max-len */
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { UserRole } from "./types"; // Adjust path as needed
 import {GoogleAuth} from "google-auth-library";
 import {UserRole} from "../../types"; // Adjust path as needed
+
 
 admin.initializeApp();
 
