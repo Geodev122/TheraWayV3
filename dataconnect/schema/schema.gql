@@ -24,10 +24,16 @@ type User @table(name: "users") {
   roles: [UserRole!]! @column(name: "roles")
   name: String @column(name: "name")
   profilePictureUrl: String @column(name: "profile_picture_url")
+  bio: String @column(name: "bio")
+  specializations: [String!] @column(name: "specializations")
+  languages: [String!] @column(name: "languages")
   isDemoAccount: Boolean @column(name: "is_demo_account")
   customClaims: JSON @column(name: "custom_claims")
   lastLogin: Timestamp @column(name: "last_login")
+  createdAt: Timestamp @column(name: "created_at")
   isActive: Boolean! @column(name: "is_active")
+  membershipApplication: JSON @column(name: "membership_application")
+  membershipRenewalDate: Timestamp @column(name: "membership_renewal_date")
 }
 
 type PracticeLocation @table(name: "practice_locations") {
@@ -172,4 +178,9 @@ type UserInquiry @table(name: "user_inquiries") {
   category: String @column(name: "category")
 }
 
-
+type FavoriteTherapist @table(name: "favorite_therapists") {
+  id: String! @column(name: "id", primaryKey: true)
+  userId: String! @column(name: "user_id")
+  therapistId: String! @column(name: "therapist_id")
+  addedAt: Timestamp! @column(name: "added_at")
+}
