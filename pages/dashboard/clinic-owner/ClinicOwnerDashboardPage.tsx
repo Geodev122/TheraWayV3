@@ -56,7 +56,7 @@ interface AccordionSectionProps {
     badgeColor?: string;
 }
 const AccordionSection: React.FC<AccordionSectionProps> = ({ titleKey, icon, isOpen, onClick, children, badgeText, badgeColor }) => {
-    const { t, direction } = useTranslation();
+    const { t } = useTranslation();
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden">
             <button
@@ -87,7 +87,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({ titleKey, icon, isO
 };
 
 const ClinicProfileTabContent: React.FC = () => {
-    const { t, direction } = useTranslation();
+    const { t } = useTranslation();
     usePageTitle('dashboardClinicProfileTab');
     const { clinicData, handleClinicProfileSave, isLoading } = useOutletContext<OutletContextType>();
     
@@ -411,24 +411,63 @@ const ClinicMySpacesTabContent: React.FC = () => {
 };
 const ClinicAnalyticsTabContent: React.FC = () => {
     usePageTitle('dashboardAnalyticsTab');
-    const { t, direction } = useTranslation();
-    // const { analyticsData, isLoading } = useOutletContext<OutletContextType>();
-    // For now, use mock data or placeholders
+    const { t } = useTranslation();
+    const { clinicData } = useOutletContext<OutletContextType>();
+
+    interface ClinicAnalytics {
+        totalClinicViews: number;
+        totalTherapistConnections: number;
+    }
+
+    const [analytics, setAnalytics] = useState<ClinicAnalytics | null>(null);
+    const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            if (!clinicData?.id) return;
+            setIsLoadingAnalytics(true);
+            try {
+                const analyticsDocRef = doc(db, `clinicsData/${clinicData.id}/analytics/summary`);
+                const analyticsSnap = await getDoc(analyticsDocRef);
+                if (analyticsSnap.exists()) {
+                    setAnalytics(analyticsSnap.data() as ClinicAnalytics);
+                } else {
+                    setAnalytics({ totalClinicViews: 0, totalTherapistConnections: 0 });
+                }
+                setError(null);
+            } catch (err) {
+                console.error('Error fetching clinic analytics:', err);
+                setError(t('errorLoadingAnalytics', { default: 'Unable to load analytics.' }));
+            } finally {
+                setIsLoadingAnalytics(false);
+            }
+        };
+        fetchAnalytics();
+    }, [clinicData?.id, t]);
+
+    if (isLoadingAnalytics) {
+        return <div className="p-6 text-center text-textOnLight">{t('loading')}</div>;
+    }
+
+    if (error) {
+        return <div className="p-6 text-center text-red-500">{error}</div>;
+    }
+
     return (
         <div className="space-y-6">
             <h3 className="text-xl font-semibold text-accent flex items-center">
-                {/* <ChartBarIcon className={`w-6 h-6 ${direction === 'rtl' ? 'ml-2' : 'mr-2'}`}/> */}
                 {t('clinicEngagementMetricsTitle')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalClinicViewsLabel')}</h4>
-                    <p className="text-3xl font-bold text-accent">1,234</p>
+                    <p className="text-3xl font-bold text-accent">{(analytics?.totalClinicViews ?? 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{t('past30DaysLabel')}</p>
                 </div>
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalTherapistConnectionsLabel')}</h4>
-                    <p className="text-3xl font-bold text-accent">56</p>
+                    <p className="text-3xl font-bold text-accent">{(analytics?.totalTherapistConnections ?? 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{t('viaPlatformFeaturesLabel')}</p>
                 </div>
             </div>

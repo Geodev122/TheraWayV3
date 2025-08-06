@@ -262,6 +262,7 @@
   "totalTherapistConnectionsLabel": "استفسارات المعالجين",
   "viaPlatformFeaturesLabel": "عبر ميزات المنصة",
   "viewTrendsOverTimePlaceholder": "سيتم عرض الرسوم البيانية والتحليلات التفصيلية هنا قريبًا.",
+  "errorLoadingAnalytics": "تعذر تحميل التحليلات.",
   "editPersonalInformationTitle": "تعديل المعلومات الشخصية",
   "managePasswordButton": "إدارة كلمة المرور",
   "deleteYourAccountButton": "حذف حسابك",

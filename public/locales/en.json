@@ -262,6 +262,7 @@
   "totalTherapistConnectionsLabel": "Therapist Inquiries",
   "viaPlatformFeaturesLabel": "via platform features",
   "viewTrendsOverTimePlaceholder": "Graphs and detailed analytics will be shown here soon.",
+  "errorLoadingAnalytics": "Unable to load analytics.",
   "editPersonalInformationTitle": "Edit Personal Information",
   "managePasswordButton": "Manage Password",
   "deleteYourAccountButton": "Delete Your Account",
