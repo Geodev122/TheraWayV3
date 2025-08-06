@@ -2,11 +2,11 @@
 import React from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { UserRole } from '../../../types';
-import { 
-    BriefcaseIcon, BuildingOfficeIcon, ShieldCheckIcon, ChartBarIcon, CogIcon, UsersIcon, 
+import {
+    BriefcaseIcon, BuildingOfficeIcon, ShieldCheckIcon, ChartBarIcon, CogIcon, UsersIcon,
     DocumentDuplicateIcon, TagIcon, PhotoIcon, ChevronDownIcon, ChevronUpIcon,
-    ChatBubbleLeftRightIcon, DocumentTextIcon 
-} from '../../icons'; 
+    ChatBubbleLeftRightIcon, DocumentTextIcon, ClockIcon
+} from '../../icons';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface DashboardLayoutProps {
@@ -32,10 +32,11 @@ const therapistNavItems: NavItem[] = [
 ];
 
 const clinicNavItems: NavItem[] = [
-  { path: '', labelKey: 'dashboardClinicProfileTab', icon: <BuildingOfficeIcon />, clinicOnly: true }, 
-  { path: 'my-clinics', labelKey: 'dashboardMyClinicsTab', icon: <BriefcaseIcon />, clinicOnly: true}, 
-  { path: 'analytics', labelKey: 'dashboardAnalyticsTab', icon: <ChartBarIcon />, clinicOnly: true}, 
-  { path: 'settings', labelKey: 'dashboardSettingsTab', icon: <CogIcon />, clinicOnly: true}, 
+  { path: '', labelKey: 'dashboardClinicProfileTab', icon: <BuildingOfficeIcon />, clinicOnly: true },
+  { path: 'my-clinics', labelKey: 'dashboardMyClinicsTab', icon: <BriefcaseIcon />, clinicOnly: true},
+  { path: 'bookings', labelKey: 'dashboardBookingsTab', icon: <ClockIcon />, clinicOnly: true},
+  { path: 'analytics', labelKey: 'dashboardAnalyticsTab', icon: <ChartBarIcon />, clinicOnly: true},
+  { path: 'settings', labelKey: 'dashboardSettingsTab', icon: <CogIcon />, clinicOnly: true},
 ];
 
 const adminNavItems: NavItem[] = [
