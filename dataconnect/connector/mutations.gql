@@ -105,3 +105,211 @@ mutation deleteClinicSpaceListing($id: String!) {
     }
   }
 }
+
+mutation createPracticeLocation($location: PracticeLocation_InsertInput!) {
+  insertIntopractice_locationsCollection(objects: [$location]) {
+    records {
+      id
+    }
+  }
+}
+
+mutation updatePracticeLocation($id: ID!, $updates: PracticeLocation_UpdateInput!) {
+  updatepractice_locationsCollection(filter: {id: {eq: $id}}, atMost: 1, set: $updates) {
+    records {
+      id
+    }
+  }
+}
+
+mutation deletePracticeLocation($id: ID!) {
+  deleteFrompractice_locationsCollection(filter: {id: {eq: $id}}) {
+    records {
+      id
+    }
+  }
+}
+
+mutation createCertification($certification: Certification_InsertInput!) {
+  insertIntocertificationsCollection(objects: [$certification]) {
+    records {
+      id
+    }
+  }
+}
+
+mutation updateCertification($id: String!, $updates: Certification_UpdateInput!) {
+  updatecertificationsCollection(filter: {id: {eq: $id}}, atMost: 1, set: $updates) {
+    records {
+      id
+    }
+  }
+}
+
+mutation deleteCertification($id: String!) {
+  deleteFromcertificationsCollection(filter: {id: {eq: $id}}) {
+    records {
+      id
+    }
+  }
+}
+
+mutation createClinicService($service: ClinicService_InsertInput!) {
+  insertIntoclinic_servicesCollection(objects: [$service]) {
+    records {
+      id
+    }
+  }
+}
+
+mutation updateClinicService($id: String!, $updates: ClinicService_UpdateInput!) {
+  updateclinic_servicesCollection(filter: {id: {eq: $id}}, atMost: 1, set: $updates) {
+    records {
+      id
+    }
+  }
+}
+
+mutation deleteClinicService($id: String!) {
+  deleteFromclinic_servicesCollection(filter: {id: {eq: $id}}) {
+    records {
+      id
+    }
+  }
+}
+
+mutation createMembershipStatus($status: MembershipStatus_InsertInput!) {
+  insertIntomembership_statusCollection(objects: [$status]) {
+    records {
+      id
+    }
+  }
+}
+
+mutation updateMembershipStatus($id: ID!, $updates: MembershipStatus_UpdateInput!) {
+  updatemembership_statusCollection(filter: {id: {eq: $id}}, atMost: 1, set: $updates) {
+    records {
+      id
+    }
+  }
+}
+
+mutation deleteMembershipStatus($id: ID!) {
+  deleteFrommembership_statusCollection(filter: {id: {eq: $id}}) {
+    records {
+      id
+    }
+  }
+}
+
+mutation createMembershipHistoryItem($item: MembershipHistoryItem_InsertInput!) {
+  insertIntomembership_historyCollection(objects: [$item]) {
+    records {
+      id
+    }
+  }
+}
+
+mutation updateMembershipHistoryItem($id: String!, $updates: MembershipHistoryItem_UpdateInput!) {
+  updatemembership_historyCollection(filter: {id: {eq: $id}}, atMost: 1, set: $updates) {
+    records {
+      id
+    }
+  }
+}
+
+mutation deleteMembershipHistoryItem($id: String!) {
+  deleteFrommembership_historyCollection(filter: {id: {eq: $id}}) {
+    records {
+      id
+    }
+  }
+}
+
+mutation createSystemHealthMetric($metric: SystemHealthMetric_InsertInput!) {
+  insertIntosystem_health_metricsCollection(objects: [$metric]) {
+    records {
+      id
+    }
+  }
+}
+
+mutation updateSystemHealthMetric($id: ID!, $updates: SystemHealthMetric_UpdateInput!) {
+  updatesystem_health_metricsCollection(filter: {id: {eq: $id}}, atMost: 1, set: $updates) {
+    records {
+      id
+    }
+  }
+}
+
+mutation deleteSystemHealthMetric($id: ID!) {
+  deleteFromsystem_health_metricsCollection(filter: {id: {eq: $id}}) {
+    records {
+      id
+    }
+  }
+}
+
+mutation createActivityLog($log: ActivityLog_InsertInput!) {
+  insertIntoactivity_logsCollection(objects: [$log]) {
+    records {
+      id
+    }
+  }
+}
+
+mutation updateActivityLog($id: String!, $updates: ActivityLog_UpdateInput!) {
+  updateactivity_logsCollection(filter: {id: {eq: $id}}, atMost: 1, set: $updates) {
+    records {
+      id
+    }
+  }
+}
+
+mutation deleteActivityLog($id: String!) {
+  deleteFromactivity_logsCollection(filter: {id: {eq: $id}}) {
+    records {
+      id
+    }
+  }
+}
+
+mutation createUserInquiry($inquiry: UserInquiry_InsertInput!) {
+  insertIntouser_inquiriesCollection(objects: [$inquiry]) {
+    records {
+      id
+    }
+  }
+}
+
+mutation updateUserInquiry($id: String!, $updates: UserInquiry_UpdateInput!) {
+  updateuser_inquiriesCollection(filter: {id: {eq: $id}}, atMost: 1, set: $updates) {
+    records {
+      id
+    }
+  }
+}
+
+mutation deleteUserInquiry($id: String!) {
+  deleteFromuser_inquiriesCollection(filter: {id: {eq: $id}}) {
+    records {
+      id
+    }
+  }
+}
+
+mutation createFavoriteTherapist($favorite: FavoriteTherapist_InsertInput!) {
+  insertIntofavorite_therapistsCollection(objects: [$favorite]) {
+    records {
+      id
+    }
+  }
+}
+
+mutation deleteFavoriteTherapist($id: String!) {
+  deleteFromfavorite_therapistsCollection(filter: {id: {eq: $id}}) {
+    records {
+      id
+    }
+  }
+}

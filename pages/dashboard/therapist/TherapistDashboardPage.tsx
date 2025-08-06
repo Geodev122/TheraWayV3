@@ -30,6 +30,10 @@ import { ClinicSpaceCard } from '../../../components/therapist-finder/ClinicSpac
 import { ClinicSpaceDetailModal } from '../../../components/therapist-finder/ClinicSpaceDetailModal';
 import { db } from '../../../firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc, Timestamp, orderBy } from 'firebase/firestore';
+import {
+    listMembershipHistory,
+    createMembershipHistoryItem
+} from '@firebasegen/default-connector';
 
 
 interface OutletContextType {
@@ -276,8 +280,8 @@ const TherapistProfileTabContent: React.FC = () => {
                         {LANGUAGES_LIST.map((lang: string) => <option key={lang} value={lang}>{lang}</option>)}
                     </select>
                     <p className="mt-1 text-xs text-gray-500">{t('multiSelectHint')}</p>
-                }
-                 {formData.languages?.includes('Other') && (
+                </div>
+                {formData.languages?.includes('Other') && (
                     <InputField label={t('otherLanguagesLabel')} id="otherLanguages" name="otherLanguages" value={otherLanguagesText} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtherLanguagesText(e.target.value)} description={t('otherLanguagesHint')} />
                 )}
 
@@ -926,9 +930,11 @@ const TherapistDashboardPageShell: React.FC = () => {
                     setAvailableClinicSpaces([]);
                 }
                 
-                const historyCollectionRef = collection(db, `therapistsData/${firebaseUser.uid}/membershipHistory`);
-                const historyQuerySnapshot = await getDocs(query(historyCollectionRef, orderBy("date", "desc"))); 
-                setMembershipHistory(historyQuerySnapshot.docs.map((d: any) => ({id: d.id, ...d.data()} as MembershipHistoryItem)));
+                const historyResp = await listMembershipHistory();
+                const items = (historyResp.data.membership_history || [])
+                    .filter((h: MembershipHistoryItem) => h.clinicId === firebaseUser.uid)
+                    .sort((a: MembershipHistoryItem, b: MembershipHistoryItem) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                setMembershipHistory(items);
 
             } catch (error) {
                 console.error("Firebase error fetching therapist dashboard data:", error);
@@ -1042,13 +1048,13 @@ const TherapistDashboardPageShell: React.FC = () => {
             await updateDoc(therapistDocRef, applicationDataForFirestore);
             
             const historyEntry: MembershipHistoryItem = {
-                id: `hist-${Date.now()}`, 
+                id: `hist-${Date.now()}`,
+                clinicId: firebaseUser.uid,
                 date: new Date().toISOString(),
                 action: t('membershipAppliedAction', { tier: STANDARD_MEMBERSHIP_TIER_NAME }),
                 details: t('receiptUploadedDetails')
             };
-            const historyDocRef = doc(collection(db, `therapistsData/${firebaseUser.uid}/membershipHistory`), historyEntry.id);
-            await setDoc(historyDocRef, historyEntry);
+            await createMembershipHistoryItem(historyEntry);
 
             setTherapistData((prev: Therapist | null) => prev ? ({...prev, ...applicationDataForState}) : null);
             setMembershipHistory(prev => [historyEntry, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
