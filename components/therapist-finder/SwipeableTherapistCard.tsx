@@ -4,12 +4,12 @@ import { MapPinIcon, PlayIcon, InformationCircleIcon, FlowerTickIcon } from '../
 import { useTranslation } from '../../hooks/useTranslation';
 import { Button } from '../common/Button';
 
-interface SpotlightTherapistCardProps {
+interface SwipeableTherapistCardProps {
   therapist: Therapist;
   onViewProfile: () => void;
 }
 
-const SpotlightTherapistCardComponent: React.FC<SpotlightTherapistCardProps> = ({ therapist, onViewProfile }) => {
+const SwipeableTherapistCardComponent: React.FC<SwipeableTherapistCardProps> = ({ therapist, onViewProfile }) => {
   const [showVideo, setShowVideo] = useState(false);
   const { t, direction } = useTranslation();
 
@@ -115,4 +115,4 @@ const SpotlightTherapistCardComponent: React.FC<SpotlightTherapistCardProps> = (
   );
 };
 
-export const SpotlightTherapistCard = React.memo(SpotlightTherapistCardComponent);
+export const SwipeableTherapistCard = React.memo(SwipeableTherapistCardComponent);
