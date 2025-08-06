@@ -40,13 +40,22 @@ export const TherapistMapView: React.FC<TherapistMapViewProps> = ({ therapists, 
         }
       });
 
-      const validTherapists = therapists.filter(t => t.locations && t.locations.some(l => l.lat && l.lng));
+      const validTherapists = therapists.filter(
+        t =>
+          t.locations &&
+          t.locations.some(
+            l => typeof l.lat === 'number' && typeof l.lng === 'number'
+          )
+      );
 
       if (validTherapists.length > 0) {
         const bounds = L.latLngBounds([] as LatLngTuple[]);
         validTherapists.forEach(therapist => {
           therapist.locations.forEach(location => {
-            if (location.lat && location.lng) {
+            if (
+              typeof location.lat === 'number' &&
+              typeof location.lng === 'number'
+            ) {
               const marker = (L.marker([location.lat, location.lng]) as LeafletMarkerClass).addTo(mapInstance.current!);
               
               const popupContent = document.createElement('div');

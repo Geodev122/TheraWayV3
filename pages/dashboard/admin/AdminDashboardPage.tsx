@@ -17,7 +17,7 @@ import {
 } from '../../../components/icons';
 import { THERAPIST_MEMBERSHIP_FEE, CLINIC_MEMBERSHIP_FEE } from '../../../constants';
 import { db } from '../../../firebase';
-import { collection, doc, getDocs, updateDoc, setDoc, query, orderBy, serverTimestamp, Timestamp, writeBatch, where } from 'firebase/firestore';
+import { collection, doc, getDocs, updateDoc, setDoc, query, orderBy, serverTimestamp, Timestamp, writeBatch, where, startAfter, limit, QueryDocumentSnapshot } from 'firebase/firestore';
 
 
 interface OutletContextType {
@@ -520,37 +520,125 @@ const AdminReportsTabContent: React.FC = () => {
 const AdminActivityLogTabContent: React.FC = () => {
     usePageTitle('dashboardActivityLogTab');
     const { t } = useTranslation();
-    const { activityLogsList, isLoading } = useOutletContext<OutletContextType>();
-    
+    const [logs, setLogs] = useState<ActivityLog[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [searchText, setSearchText] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [pageSize, setPageSize] = useState(10);
+    const [pageIndex, setPageIndex] = useState(0);
+    const [lastDocs, setLastDocs] = useState<QueryDocumentSnapshot<ActivityLog>[]>([]);
+
+    const fetchLogs = useCallback(async (newPage: number) => {
+        setLoading(true);
+        try {
+            const constraints: any[] = [];
+            if (startDate) constraints.push(where('timestamp', '>=', startDate));
+            if (endDate) constraints.push(where('timestamp', '<=', endDate));
+            constraints.push(orderBy('timestamp', 'desc'));
+            if (newPage > 0 && lastDocs[newPage - 1]) {
+                constraints.push(startAfter(lastDocs[newPage - 1]));
+            }
+            constraints.push(limit(pageSize));
+
+            const snapshot = await getDocs(query(collection(db, 'activityLog'), ...constraints));
+            let fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog));
+            if (searchText) {
+                const lower = searchText.toLowerCase();
+                fetched = fetched.filter(log =>
+                    log.action.toLowerCase().includes(lower) ||
+                    (log.userName && log.userName.toLowerCase().includes(lower))
+                );
+            }
+            setLogs(fetched);
+            const newLastDocs = [...lastDocs];
+            newLastDocs[newPage] = snapshot.docs[snapshot.docs.length - 1] as QueryDocumentSnapshot<ActivityLog>;
+            setLastDocs(newLastDocs);
+            setPageIndex(newPage);
+        } catch (error) {
+            console.error('Error fetching activity logs:', error);
+        }
+        setLoading(false);
+    }, [startDate, endDate, pageSize, searchText, lastDocs]);
+
+    useEffect(() => {
+        fetchLogs(0);
+    }, [fetchLogs]);
+
     return (
         <div className="space-y-6 bg-primary p-4 sm:p-6 rounded-lg shadow-md text-textOnLight">
             <h3 className="text-xl font-semibold text-accent flex items-center">
                 <DocumentTextIcon className="w-6 h-6 mr-2"/>
                 {t('systemActivityLog')}
             </h3>
-            {isLoading && activityLogsList.length === 0 ? <p>{t('loading')}</p> :
-                activityLogsList.length > 0 ? (
+
+            <div className="flex flex-wrap gap-4">
+                <InputField
+                    id="searchText"
+                    label={t('search')}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    containerClassName="w-full sm:w-1/4"
+                    placeholder={t('search')}
+                />
+                <InputField
+                    id="startDate"
+                    type="date"
+                    label={t('startDateLabel')}
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    containerClassName="w-full sm:w-1/4"
+                />
+                <InputField
+                    id="endDate"
+                    type="date"
+                    label={t('endDateLabel')}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    containerClassName="w-full sm:w-1/4"
+                />
+                <div className="w-full sm:w-1/6">
+                    <label htmlFor="pageSize" className="block text-sm font-medium text-textDarker mb-1.5">{t('pageSize')}</label>
+                    <select
+                        id="pageSize"
+                        value={pageSize}
+                        onChange={(e) => setPageSize(Number(e.target.value))}
+                        className="mt-1 block w-full px-4 py-2.5 border border-secondary rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent sm:text-sm bg-primary text-textOnLight"
+                    >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                    </select>
+                </div>
+            </div>
+
+            {loading ? <p>{t('loading')}</p> :
+                logs.length > 0 ? (
                     <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50/50">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('timestampLabel')}</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userOrSystemLabel')}</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actionLabel')}</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('detailsLabel')}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-primary divide-y divide-gray-200">
-                        {activityLogsList.map((log) => (
-                            <tr key={log.id}>
-                                <td className="px-6 py-4 whitespace-nowrap">{new Date(log.timestamp).toLocaleString()}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">{log.userName || log.userId}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">{log.action}</td>
-                                <td className="px-6 py-4 ">{typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50/50">
+                                <tr>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('timestampLabel')}</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userOrSystemLabel')}</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actionLabel')}</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('detailsLabel')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-primary divide-y divide-gray-200">
+                                {logs.map((log) => (
+                                    <tr key={log.id}>
+                                        <td className="px-6 py-4 whitespace-nowrap">{new Date(log.timestamp).toLocaleString()}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">{log.userName || log.userId}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">{log.action}</td>
+                                        <td className="px-6 py-4 ">{typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <div className="flex justify-between mt-4">
+                            <Button variant="light" disabled={pageIndex === 0 || loading} onClick={() => fetchLogs(Math.max(pageIndex - 1, 0))}>{t('previous')}</Button>
+                            <Button variant="light" disabled={logs.length < pageSize || loading} onClick={() => fetchLogs(pageIndex + 1)}>{t('next')}</Button>
+                        </div>
                     </div>
                 ) : <p>{t('noActivityLogsFound')}</p>
             }
@@ -625,6 +713,46 @@ const AdminDashboardPageShell: React.FC = () => {
         }
     }, [user]);
 
+    const notifyStatusChange = useCallback(async (
+        targetType: 'therapist' | 'clinic',
+        targetId: string,
+        status: string,
+        notes?: string
+    ) => {
+        try {
+            const response = await fetch('/api/sendStatusNotification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetType, targetId, status, notes }),
+            });
+            const result = await response.json().catch(() => ({}));
+            await addActivityLogEntry({
+                action: 'Status Notification',
+                targetId,
+                targetType,
+                details: {
+                    status,
+                    notes: notes || 'N/A',
+                    notificationResult: response.ok ? 'success' : 'failure',
+                    response: result,
+                },
+            });
+        } catch (error) {
+            console.error('Error sending status notification:', error);
+            await addActivityLogEntry({
+                action: 'Status Notification',
+                targetId,
+                targetType,
+                details: {
+                    status,
+                    notes: notes || 'N/A',
+                    notificationResult: 'error',
+                    error: (error as Error).message,
+                },
+            });
+        }
+    }, [addActivityLogEntry]);
+
     const handleTherapistStatusChange = async (therapistId: string, status: Therapist['accountStatus'], notes?: string) => {
         setIsLoading(true);
         try {
@@ -640,6 +768,7 @@ const AdminDashboardPageShell: React.FC = () => {
 
             await updateDoc(therapistDocRef, { ...updates, updatedAt: serverTimestamp() });
             setTherapistsList(prev => prev.map(t => t.id === therapistId ? { ...t, ...updates } : t));
+            await notifyStatusChange('therapist', therapistId, status, notes);
             await addActivityLogEntry({
                 action: 'Therapist Status Change',
                 targetId: therapistId,
@@ -661,7 +790,13 @@ const AdminDashboardPageShell: React.FC = () => {
             
             await updateDoc(clinicDocRef, { ...updates, updatedAt: serverTimestamp() });
             setClinicsList(prev => prev.map(c => c.id === clinicId ? { ...c, ...updates } : c));
-             await addActivityLogEntry({ action: 'Clinic Status Change', targetId: clinicId, targetType: 'clinic', details: { newStatus: status, notes: notes || 'N/A' }});
+            await notifyStatusChange('clinic', clinicId, status, notes);
+            await addActivityLogEntry({
+                action: 'Clinic Status Change',
+                targetId: clinicId,
+                targetType: 'clinic',
+                details: { newStatus: status, notes: notes || 'N/A' },
+            });
         } catch (error) {
             console.error("Error changing clinic status:", error);
         }
