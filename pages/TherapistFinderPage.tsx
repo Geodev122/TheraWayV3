@@ -666,7 +666,6 @@ export const TherapistFinderPage: React.FC = () => {
             </div>
           )}
 
-<<<<<<< HEAD
           <div className="fixed bottom-4 inset-x-0 z-[1000] flex justify-center" role="navigation" aria-label={t('mainNavigation')}>
             <div className="w-full max-w-sm bg-accent rounded-full shadow-2xl flex items-center justify-between p-1.5" style={{boxShadow: '0 8px 30px rgba(0,0,0,0.2)'}}>
                 <div className="flex items-center">
@@ -702,63 +701,6 @@ export const TherapistFinderPage: React.FC = () => {
                         )}
                     </button>
                 </div>
-            </div>
-          </div>
-=======
-          <nav
-            className="fixed bottom-0 left-0 right-0 bg-transparent z-[1000] flex justify-center"
-            style={{ height: `${BOTTOM_NAV_BAR_BASE_HEIGHT + FILTER_BUTTON_PROTRUSION_SPACE}px` }}
-            role="navigation"
-            aria-label={t('mainNavigation')}
-          >
-            <div
-              className="relative w-full max-w-md mx-auto bg-primary rounded-t-xl sm:rounded-full shadow-top-lg flex items-end px-1 sm:px-2"
-              style={{ height: `${BOTTOM_NAV_BAR_BASE_HEIGHT}px` }}
-            >
-              <div className="absolute left-1/2 sm:left-6 transform -translate-x-1/2 sm:-translate-x-0 -top-[calc(56px/2-4px)] z-10 flex flex-col items-center group">
-                 <button
-                    onClick={() => setIsFilterModalOpen(true)}
-                    className={`w-10 h-10 bg-primary rounded-full shadow-lg flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1 focus:ring-offset-primary transition-all hover:scale-105 active:scale-95
-                               ${filterButtonActive ? 'ring-2 ring-accent ring-offset-primary shadow-accent/30' : ''}`}
-                    aria-label={filterButtonActive ? t('filterActiveAction', { count: numActiveFilters }) : t('filtersButtonLabel')}
-                    aria-pressed={filterButtonActive}
-                  >
-                    <span className={`w-5 h-5 text-accent`}>
-                      {numActiveFilters > 0 ? <FilterSolidIcon /> : <AdjustmentsHorizontalIcon />}
-                    </span>
-                    {numActiveFilters > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5 border border-primary">
-                        {numActiveFilters}
-                      </span>
-                    )}
-                  </button>
-              </div>
-              <div className="flex flex-1 justify-end items-stretch h-full">
-                {[
-                  { key: 'spotlight', icon: <SearchIcon />, labelKey: 'viewModeSpotlight', currentView: 'spotlight' },
-                  { key: 'grid', icon: <Squares2X2Icon />, labelKey: 'viewModeGrid', currentView: 'grid' },
-                  { key: 'map', icon: <MapIcon />, labelKey: 'viewModeMap', currentView: 'map' },
-                ].map(item => (
-                  <button
-                    key={item.key}
-                    onClick={() => handleViewModeChange(item.currentView as ViewMode)}
-                    className={`flex-1 flex flex-col items-center justify-center h-full p-1.5 group focus:outline-none relative transition-all duration-200 ease-in-out active:scale-95 hover:bg-accent/5 rounded-lg
-                               ${viewMode === item.currentView ? 'text-accent font-semibold' : 'text-subtleBlue hover:text-accent'}`}
-                    aria-label={t(item.labelKey)}
-                    aria-pressed={viewMode === item.currentView}
-                  >
-                    <span className={`w-6 h-6 mb-0.5 transition-colors duration-200 ease-in-out
-                                     ${viewMode === item.currentView ? 'text-accent' : 'text-accent opacity-70 group-hover:opacity-100'}`}>
-                      {item.icon}
-                    </span>
-                    <span className="text-[10px] leading-tight truncate">{t(item.labelKey)}</span>
-                    {viewMode === item.currentView && (
-                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent rounded-full"></span>
-                    )}
-                  </button>
-                ))}
-              </div>
->>>>>>> 3f11d228cf1c692f7634b65f62ed4eeb4495a253
             </div>
           </div>
 
@@ -887,7 +829,7 @@ const FilterModalComponent: React.FC<FilterModalProps> = ({
                         <label className="block text-sm font-medium text-textOnLight mb-1">{t('specializations')}</label>
                         <div className="max-h-48 overflow-y-auto border border-secondary rounded-md p-3 space-y-2 bg-background">
                             {availableSpecializations.map(spec => (
-                                <CheckboxField key={spec} id={`spec-${spec.replace(/[^a-zA-Z0-9]/g, "")}`} name={`specializations.${spec}`} label={spec} checked={(tempFilters.specializations || []).includes(spec)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent\" containerClassName="!mb-0"/>
+                                <CheckboxField key={spec} id={`spec-${spec.replace(/[^a-zA-Z0-9]/g, "")}`} name={`specializations.${spec}`} label={spec} checked={(tempFilters.specializations || []).includes(spec)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent" containerClassName="!mb-0" />
                             ))}
                         </div>
                          <p className="text-xs text-textOnLight/70 mt-1.5">{t('selectOneOrMoreSpecializations')}</p>
@@ -896,7 +838,7 @@ const FilterModalComponent: React.FC<FilterModalProps> = ({
                         <label className="block text-sm font-medium text-textOnLight mb-1">{t('languages')}</label>
                         <div className="max-h-48 overflow-y-auto border border-secondary rounded-md p-3 space-y-2 bg-background">
                             {availableLanguages.map(lang => (
-                                <CheckboxField key={lang} id={`lang-${lang.replace(/[^a-zA-Z0-9]/g, "")}`} name={`languages.${lang}`} label={lang} checked={(tempFilters.languages || []).includes(lang)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent\" containerClassName="!mb-0"/>
+                                <CheckboxField key={lang} id={`lang-${lang.replace(/[^a-zA-Z0-9]/g, "")}`} name={`languages.${lang}`} label={lang} checked={(tempFilters.languages || []).includes(lang)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent" containerClassName="!mb-0" />
                             ))}
                         </div>
                         <p className="text-xs text-textOnLight/70 mt-1.5">{t('selectOneOrMoreLanguages')}</p>
@@ -907,7 +849,7 @@ const FilterModalComponent: React.FC<FilterModalProps> = ({
                     <label className="block text-sm font-medium text-textOnLight mb-1">{t('availability')}</label>
                     <div className="max-h-40 overflow-y-auto border border-secondary rounded-md p-3 space-y-2 bg-background">
                         {availableAvailabilities.map(avail => (
-                            <CheckboxField key={avail} id={`avail-${avail.replace(/[^a-zA-Z0-9]/g, "")}`} name={`availability.${avail}`} label={t(avail.toLowerCase().replace(/\s+/g, ''), {default: avail})} checked={(tempFilters.availability || []).includes(avail)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent\" containerClassName="!mb-0"/>
+                            <CheckboxField key={avail} id={`avail-${avail.replace(/[^a-zA-Z0-9]/g, "")}`} name={`availability.${avail}`} label={t(avail.toLowerCase().replace(/\s+/g, ''), {default: avail})} checked={(tempFilters.availability || []).includes(avail)} onChange={handleInputChange} className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent" containerClassName="!mb-0" />
                         ))}
                     </div>
                     <p className="text-xs text-textOnLight/70 mt-1.5">{t('selectAvailabilityHint')}</p>
