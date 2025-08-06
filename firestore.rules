@@ -194,8 +194,31 @@ service cloud.firestore {
                      resource.data.roles.hasAny(["therapist", "clinic_owner"]) &&
                      request.query.keys().hasOnly([
                          'id', 'name', 'profilePictureUrl', 'photos', 'amenities', 'operatingHours',
-                         'services', 'address', 'lat', 'lng', 'description', 'isVerified'
+                     'services', 'address', 'lat', 'lng', 'description', 'isVerified'
                      ]);
+    }
+
+    match /therapistsData/{therapistId} {
+      // Admins have full access; therapists can manage their own data
+      allow read, write: if isAdmin() || (isTherapist() && isOwner(therapistId));
+
+      match /membershipHistory/{entryId} {
+        // Admins or the owning therapist can access membership history
+        allow read, write: if isAdmin() || (isTherapist() && isOwner(therapistId));
+      }
+    }
+
+    match /clinicsData/{clinicId} {
+      // Admins have full access; clinic owners can manage their own clinic data
+      allow read, write: if isAdmin() || (isClinicOwner() &&
+        (resource.data.ownerId == request.auth.uid || request.resource.data.ownerId == request.auth.uid));
+    }
+
+    match /activityLog/{logId} {
+      // Admins have full access; users can access their own activity logs
+      allow read, write: if isAdmin() ||
+        (isSignedIn() && (resource.data.userId == request.auth.uid ||
+          request.resource.data.userId == request.auth.uid));
     }
 
     match /clinicSpaces/{clinicSpaceId} {
