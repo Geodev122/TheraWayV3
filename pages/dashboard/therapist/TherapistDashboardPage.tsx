@@ -269,7 +269,7 @@ const TherapistProfileTabContent: React.FC = () => {
                         id="languages" 
                         name="languages"
                         multiple
-                        value={formData.languages || []} 
+                        value={formData.languages || []}
                         onChange={handleLanguagesChange}
                         className="mt-1 block w-full h-32 px-3 py-2 border border-gray-300 bg-primary text-textOnLight rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent sm:text-sm"
                     >
@@ -289,6 +289,7 @@ const TherapistProfileTabContent: React.FC = () => {
                     />
 
                     <InputField label={t('otherLanguagesLabel')} id="otherLanguages" name="otherLanguages" value={otherLanguagesText} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtherLanguagesText(e.target.value)} description={t('otherLanguagesHint')} />
+
 
                 )}
 
