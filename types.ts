@@ -1,9 +1,9 @@
 
 export enum UserRole {
-  CLIENT = 'CLIENT',
-  THERAPIST = 'THERAPIST',
-  CLINIC_OWNER = 'CLINIC_OWNER',
-  ADMIN = 'ADMIN',
+  CLIENT = 'client',
+  THERAPIST = 'therapist',
+  CLINIC_OWNER = 'clinic_owner',
+  ADMIN = 'admin',
 }
 
 export interface User {
@@ -75,7 +75,7 @@ export interface ClinicService {
 export interface ClinicSpaceListing {
   id: string;
   name: string;
-  photos: string[]; 
+  photos: string[];
   description: string;
   rentalPrice: number;
   rentalDuration: string; 
@@ -84,7 +84,20 @@ export interface ClinicSpaceListing {
   clinicId?: string; 
   clinicName?: string; 
   clinicAddress?: string;
-  isDemoAccount?: boolean; 
+  isDemoAccount?: boolean;
+}
+
+export interface ClinicBooking {
+  id: string;
+  clinicId: string;
+  spaceId?: string;
+  spaceName?: string;
+  therapistId: string;
+  therapistName: string;
+  therapistWhatsapp: string;
+  startTime: string;
+  endTime: string;
+  status: 'pending' | 'accepted' | 'declined' | 'completed';
 }
 
 export interface MembershipStatus {
