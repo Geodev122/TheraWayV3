@@ -23,6 +23,8 @@ import {
     PlusCircleIcon, PencilIcon, TrashIcon, ArrowUpOnSquareIcon, CheckCircleIcon,
     ChevronDownIcon, ChevronUpIcon, UsersIcon, DocumentDuplicateIcon, MapPinIcon, ClockIcon, InformationCircleIcon, WhatsAppIcon
 } from '../../../components/icons';
+import { Line } from 'react-chartjs-2';
+import 'chart.js/auto';
 import { db } from '../../../firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc, Timestamp, orderBy } from 'firebase/firestore';
 import {
@@ -517,71 +519,68 @@ const ClinicAnalyticsTabContent: React.FC = () => {
     const { t } = useTranslation();
     const { clinicData } = useOutletContext<OutletContextType>();
 
-
-    const [metrics, setMetrics] = useState<{ views: number; connections: number } | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     interface ClinicAnalytics {
         totalClinicViews: number;
         totalTherapistConnections: number;
+        dailyViews?: Record<string, number>;
     }
 
     const [analytics, setAnalytics] = useState<ClinicAnalytics | null>(null);
-    const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchAnalytics = async () => {
-            if (!clinicData?.id) {
-                setIsLoading(false);
-                return;
-            }
-            try {
-                const analyticsRef = doc(db, 'clinicAnalytics', clinicData.id);
-                const analyticsSnap = await getDoc(analyticsRef);
-                if (analyticsSnap.exists()) {
-                    const data = analyticsSnap.data();
-                    setMetrics({
-                        views: data.totalViews ?? 0,
-                        connections: data.therapistConnections ?? 0,
-                    });
-                } else {
-                    setMetrics({ views: 0, connections: 0 });
-                }
-            } catch (err) {
-                console.error('Error fetching clinic analytics:', err);
-                setError(t('unexpectedError'));
-            } finally {
-                setIsLoading(false);
             if (!clinicData?.id) return;
-            setIsLoadingAnalytics(true);
+            setIsLoading(true);
             try {
-                const analyticsDocRef = doc(db, `clinicsData/${clinicData.id}/analytics/summary`);
-                const analyticsSnap = await getDoc(analyticsDocRef);
-                if (analyticsSnap.exists()) {
-                    setAnalytics(analyticsSnap.data() as ClinicAnalytics);
-                } else {
-                    setAnalytics({ totalClinicViews: 0, totalTherapistConnections: 0 });
-                }
+                const summaryRef = doc(db, `clinicsData/${clinicData.id}/analytics/summary`);
+                const summarySnap = await getDoc(summaryRef);
+
+                const dailyRef = doc(db, `clinicsData/${clinicData.id}/analytics/daily`);
+                const dailySnap = await getDoc(dailyRef);
+
+                const data: ClinicAnalytics = {
+                    totalClinicViews: summarySnap.exists() ? (summarySnap.data().totalClinicViews ?? 0) : 0,
+                    totalTherapistConnections: summarySnap.exists() ? (summarySnap.data().totalTherapistConnections ?? 0) : 0,
+                    dailyViews: dailySnap.exists() ? (dailySnap.data().views as Record<string, number>) : undefined,
+                };
+
+                setAnalytics(data);
                 setError(null);
             } catch (err) {
                 console.error('Error fetching clinic analytics:', err);
                 setError(t('errorLoadingAnalytics', { default: 'Unable to load analytics.' }));
             } finally {
-                setIsLoadingAnalytics(false);
+                setIsLoading(false);
             }
         };
         fetchAnalytics();
     }, [clinicData?.id, t]);
 
     if (isLoading) {
-    if (isLoadingAnalytics) {
         return <div className="p-6 text-center text-textOnLight">{t('loading')}</div>;
     }
 
     if (error) {
-        return <div className="p-6 text-center text-red-600">{error}</div>;
         return <div className="p-6 text-center text-red-500">{error}</div>;
     }
+
+    const chartData = useMemo(() => {
+        if (!analytics?.dailyViews) return null;
+        const labels = Object.keys(analytics.dailyViews).sort();
+        return {
+            labels,
+            datasets: [
+                {
+                    label: t('totalClinicViewsLabel'),
+                    data: labels.map(label => analytics.dailyViews![label]),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.2)',
+                },
+            ],
+        };
+    }, [analytics?.dailyViews, t]);
 
     return (
         <div className="space-y-6">
@@ -591,21 +590,25 @@ const ClinicAnalyticsTabContent: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalClinicViewsLabel')}</h4>
-                    <p className="text-3xl font-bold text-accent">{metrics?.views ?? 0}</p>
                     <p className="text-3xl font-bold text-accent">{(analytics?.totalClinicViews ?? 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{t('past30DaysLabel')}</p>
                 </div>
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalTherapistConnectionsLabel')}</h4>
-                    <p className="text-3xl font-bold text-accent">{metrics?.connections ?? 0}</p>
                     <p className="text-3xl font-bold text-accent">{(analytics?.totalTherapistConnections ?? 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{t('viaPlatformFeaturesLabel')}</p>
                 </div>
             </div>
-            <div className="bg-gray-50/50 p-6 rounded-lg shadow text-center">
-                <InformationCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600">{t('viewTrendsOverTimePlaceholder')}</p>
-            </div>
+            {chartData ? (
+                <div className="bg-gray-50/50 p-6 rounded-lg shadow">
+                    <Line data={chartData} />
+                </div>
+            ) : (
+                <div className="bg-gray-50/50 p-6 rounded-lg shadow text-center">
+                    <InformationCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600">{t('viewTrendsOverTimePlaceholder')}</p>
+                </div>
+            )}
         </div>
     );
 };

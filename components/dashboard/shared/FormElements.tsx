@@ -342,10 +342,10 @@ export const CheckboxField: React.FC<CheckboxProps> = ({
         <div className="flex items-center h-5">
           <input
             id={id}
-            name={id}
             type="checkbox"
             className={className}
             {...props}
+            name={props.name ?? id}
           />
         </div>
         <div className={`${direction === 'rtl' ? 'mr-3' : 'ml-3'} text-sm`}>
