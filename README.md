@@ -44,6 +44,31 @@ TheraWay is a comprehensive mental health web application designed to connect cl
 *   **Frontend:** React, TypeScript, Tailwind CSS, Leaflet.js
 *   **Backend:** Firebase (Authentication, Firestore, Cloud Storage). Firebase Cloud Functions can be added for server-side logic if needed.
 
+## Environment Variables
+
+Create a `.env` file in the project root by copying `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Then fill in the following variables with your project-specific values:
+
+| Variable | Description |
+| --- | --- |
+| `VITE_FIREBASE_API_KEY` | Firebase API key |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Auth domain |
+| `VITE_FIREBASE_PROJECT_ID` | Firebase project ID |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Firebase storage bucket |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID |
+| `VITE_FIREBASE_APP_ID` | Firebase app ID |
+| `VITE_FIREBASE_MEASUREMENT_ID` | Firebase measurement ID (analytics) |
+| `DATA_CONNECT_ENDPOINT` | Firebase Data Connect GraphQL endpoint |
+| `DATA_CONNECT_SERVICE_ID` | Firebase Data Connect service ID |
+| `DATA_CONNECT_LOCATION` | Firebase Data Connect location |
+
+Each developer should maintain their own `.env` file locally and never commit it to version control.
+
 ## Firebase Setup - CRITICAL STEPS
 
 **FAILURE TO FOLLOW THESE STEPS WILL RESULT IN THE APPLICATION NOT CONNECTING TO FIREBASE (e.g., "Could not reach Cloud Firestore backend" errors).**
