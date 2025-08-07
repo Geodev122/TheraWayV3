@@ -48,6 +48,16 @@ TheraWay is a comprehensive mental health web application designed to connect cl
 
 **FAILURE TO FOLLOW THESE STEPS WILL RESULT IN THE APPLICATION NOT CONNECTING TO FIREBASE (e.g., "Could not reach Cloud Firestore backend" errors).**
 
+### Service Account Key
+
+Some scripts and deployment steps require Firebase Admin credentials. Generate a service account in the Firebase Console and download its JSON key. Store this file **outside** the repository and reference it via an environment variable, for example:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
+```
+
+The `serviceAccountKey.json` file is already listed in `.gitignore` and should never be committed to version control.
+
 1.  **Create Firebase Project:** Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
 2.  **Add Web App:** Add a web application to your Firebase project.
 3.  **Firebase Configuration (MOST IMPORTANT):**
