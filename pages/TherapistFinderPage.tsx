@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Therapist, UserRole } from '../types';
+import { Therapist, UserRole, FavoriteTherapist } from '../types';
 import { APP_NAME, AVAILABILITY_OPTIONS, SPECIALIZATIONS_LIST, LANGUAGES_LIST } from '../constants';
 import { TherapistDetailModal } from '../components/TherapistDetailModal';
 import { Button } from '../components/common/Button';
-import { SpotlightTherapistCard } from '../components/therapist-finder/SwipableTherapistCard';
+import { SwipeableTherapistCard } from '../components/therapist-finder/SwipeableTherapistCard';
 import { TherapistCard } from '../components/TherapistCard';
 import { TherapistMapView } from '../components/therapist-finder/TherapistMapView';
 import { Modal } from '../components/common/Modal';
@@ -12,7 +12,12 @@ import { InputField, SelectField, CheckboxField } from '../components/dashboard/
 import { useTranslation } from '../hooks/useTranslation';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { db } from '../firebase';
-import { collection, query, where, getDocs, doc, setDoc, deleteDoc, limit as firestoreLimit, startAfter, Timestamp, orderBy, documentId, getDoc, QueryDocumentSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, limit as firestoreLimit, startAfter, Timestamp, orderBy, documentId, getDoc, QueryDocumentSnapshot } from 'firebase/firestore';
+import {
+  listFavoriteTherapists,
+  createFavoriteTherapist,
+  deleteFavoriteTherapist
+} from '@firebasegen/default-connector';
 
 
 import {
@@ -228,10 +233,11 @@ export const TherapistFinderPage: React.FC = () => {
         return;
     }
     try {
-        const favCollectionRef = collection(db, `users/${firebaseUser.uid}/favorites`);
-        const querySnapshot = await getDocs(favCollectionRef);
+        const resp = await listFavoriteTherapists();
         const favIds = new Set<string>();
-        querySnapshot.forEach((docSnap: QueryDocumentSnapshot) => favIds.add(docSnap.id));
+        (resp.data.favorite_therapists || [])
+          .filter((f: FavoriteTherapist) => f.userId === firebaseUser.uid)
+          .forEach((f: FavoriteTherapist) => favIds.add(f.therapistId));
         setFavorites(favIds);
     } catch (error) {
         console.error("Error fetching favorites:", error);
@@ -328,8 +334,6 @@ export const TherapistFinderPage: React.FC = () => {
     }
 
     const isCurrentlyFavorite = favorites.has(therapistId);
-    const favDocRef = doc(db, `users/${firebaseUser.uid}/favorites`, therapistId);
-
     setFavorites(prevFavorites => {
         const newFavorites = new Set(prevFavorites);
         if (isCurrentlyFavorite) newFavorites.delete(therapistId);
@@ -338,10 +342,16 @@ export const TherapistFinderPage: React.FC = () => {
     });
 
     try {
+        const favId = `fav-${firebaseUser.uid}-${therapistId}`;
         if (isCurrentlyFavorite) {
-            await deleteDoc(favDocRef);
+            await deleteFavoriteTherapist(favId);
         } else {
-            await setDoc(favDocRef, { addedAt: Timestamp.now() });
+            await createFavoriteTherapist({
+                id: favId,
+                userId: firebaseUser.uid,
+                therapistId,
+                addedAt: Timestamp.now().toDate().toISOString(),
+            });
         }
         if (activeFilters.showOnlyLiked) {
              fetchTherapistsFromFirestore(activeFilters, false);
@@ -353,7 +363,7 @@ export const TherapistFinderPage: React.FC = () => {
             else newFavorites.delete(therapistId);
             return newFavorites;
         });
-        console.error("Error toggling favorite in Firestore:", error);
+        console.error("Error toggling favorite:", error);
     }
   }, [isAuthenticated, firebaseUser, user, promptLogin, t, favorites, allTherapistsStorage, activeFilters, fetchTherapistsFromFirestore]);
 
@@ -489,7 +499,7 @@ export const TherapistFinderPage: React.FC = () => {
               key={currentTherapistForSpotlight.id + currentIndex}
               className={`w-full h-full ${getCardAnimationClass()}`}
             >
-                <SpotlightTherapistCard
+                <SwipeableTherapistCard
                     therapist={currentTherapistForSpotlight}
                     onViewProfile={() => handleViewProfile(currentTherapistForSpotlight)}
                 />

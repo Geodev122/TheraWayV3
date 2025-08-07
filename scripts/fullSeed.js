@@ -105,6 +105,72 @@ const demoClinicSpaces = [
     },
 ];
 
+// Demo user inquiries
+const demoUserInquiries = [
+    {
+        id: 'demo-inquiry-1',
+        userEmail: 'client@theraway.net',
+        userName: 'Client User',
+        subject: 'Unable to book session',
+        message: 'I get an error when trying to book a session.',
+        date: new Date().toISOString(),
+        status: 'open',
+        priority: 'high',
+        category: 'technical_support',
+        isDemoAccount: true,
+    },
+    {
+        id: 'demo-inquiry-2',
+        userEmail: 'client@theraway.net',
+        userName: 'Client User',
+        subject: 'General question about services',
+        message: 'What services are offered for anxiety?',
+        date: new Date().toISOString(),
+        status: 'pending_admin_response',
+        priority: 'medium',
+        category: 'general',
+        isDemoAccount: true,
+    },
+];
+
+// Demo activity log entries
+const demoActivityLogEntries = [
+    {
+        id: 'demo-log-1',
+        timestamp: new Date().toISOString(),
+        action: 'Initial demo activity',
+        targetType: 'system',
+        details: 'Seeding initial demo data',
+        isDemoAccount: true,
+    },
+    {
+        id: 'demo-log-2',
+        timestamp: new Date().toISOString(),
+        action: 'Client created inquiry',
+        targetType: 'user',
+        details: 'Client User submitted an inquiry',
+        isDemoAccount: true,
+    },
+];
+
+// Demo membership history for therapist
+const demoMembershipHistory = [
+    {
+        id: 'membership-1',
+        date: new Date().toISOString(),
+        action: 'Joined platform',
+        details: 'Initial membership activation',
+        isDemoAccount: true,
+    },
+    {
+        id: 'membership-2',
+        date: new Date().toISOString(),
+        action: 'Membership renewed',
+        details: 'Annual renewal processed',
+        isDemoAccount: true,
+    },
+];
+
 async function fullSeed() {
     console.log(`\x1b[36mInitializing full seeding script for Firebase project: ${firebaseConfig.projectId}\x1b[0m`);
     console.log('Starting to seed all demo data...');
@@ -209,6 +275,67 @@ async function fullSeed() {
         } catch (error) {
             console.error(`  \x1b[31m✗\x1b[0m ERROR: Failed to seed clinic profile for ${clinic.name}.`, error.message);
         }
+    }
+
+    // Seed User Inquiries
+    try {
+        const clientUid = createdUids['CLIENT'];
+        const inquiriesBatch = writeBatch(db);
+        demoUserInquiries.forEach(inquiry => {
+            const inquiryRef = doc(collection(db, 'userInquiries'), inquiry.id);
+            inquiriesBatch.set(inquiryRef, {
+                ...inquiry,
+                userId: clientUid || null,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            }, { merge: true });
+        });
+        await inquiriesBatch.commit();
+        console.log(`  \x1b[32m✓\x1b[0m Successfully seeded user inquiries`);
+    } catch (error) {
+        console.error(`  \x1b[31m✗\x1b[0m ERROR: Failed to seed user inquiries.`, error.message);
+    }
+
+    // Seed Activity Log Entries
+    try {
+        const adminUid = createdUids['ADMIN'];
+        const logsBatch = writeBatch(db);
+        demoActivityLogEntries.forEach(log => {
+            const logRef = doc(collection(db, 'activityLog'), log.id);
+            logsBatch.set(logRef, {
+                ...log,
+                userId: adminUid || null,
+                userName: 'Admin User',
+                userRole: 'ADMIN',
+                createdAt: serverTimestamp(),
+            }, { merge: true });
+        });
+        await logsBatch.commit();
+        console.log(`  \x1b[32m✓\x1b[0m Successfully seeded activity log entries`);
+    } catch (error) {
+        console.error(`  \x1b[31m✗\x1b[0m ERROR: Failed to seed activity log entries.`, error.message);
+    }
+
+    // Seed Therapist Membership History
+    try {
+        const therapistUid = createdUids['THERAPIST'];
+        if (!therapistUid) {
+            console.warn(`  \x1b[33m!\x1b[0m WARNING: Therapist user not found in created UIDs, skipping membership history seeding.`);
+        } else {
+            const historyBatch = writeBatch(db);
+            demoMembershipHistory.forEach(item => {
+                const historyRef = doc(collection(db, `therapistsData/${therapistUid}/membershipHistory`), item.id);
+                historyBatch.set(historyRef, {
+                    ...item,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                }, { merge: true });
+            });
+            await historyBatch.commit();
+            console.log(`  \x1b[32m✓\x1b[0m Successfully seeded therapist membership history`);
+        }
+    } catch (error) {
+        console.error(`  \x1b[31m✗\x1b[0m ERROR: Failed to seed therapist membership history.`, error.message);
     }
 
     console.log('\n\x1b[36mFinished seeding all demo data.\x1b[0m');

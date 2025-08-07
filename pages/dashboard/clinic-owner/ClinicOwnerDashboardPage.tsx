@@ -4,7 +4,7 @@ import { Outlet, Route, Routes, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { usePageTitle } from '../../../hooks/usePageTitle';
-import { Clinic, UserRole, ClinicSpaceListing, MembershipHistoryItem, UserManagementInfo, MembershipStatus } from '../../../types';
+import { Clinic, UserRole, ClinicSpaceListing, MembershipHistoryItem, UserManagementInfo, MembershipStatus, ClinicBooking } from '../../../types';
 import { 
     CLINIC_SPACE_PHOTO_MAX_SIZE_MB, 
     PAYMENT_RECEIPT_MAX_SIZE_MB, 
@@ -18,13 +18,17 @@ import { DashboardLayout } from '../../../components/dashboard/shared/DashboardL
 import { Button } from '../../../components/common/Button';
 import { InputField, TextareaField, FileUploadField, SelectField, CheckboxField, uploadFileToFirebase, deleteFileFromFirebase } from '../../../components/dashboard/shared/FormElements';
 import { Modal } from '../../../components/common/Modal';
-import { 
-    BuildingOfficeIcon, BriefcaseIcon, CogIcon, PhotoIcon, 
+import {
+    BuildingOfficeIcon, BriefcaseIcon, CogIcon, PhotoIcon,
     PlusCircleIcon, PencilIcon, TrashIcon, ArrowUpOnSquareIcon, CheckCircleIcon,
-    ChevronDownIcon, ChevronUpIcon, UsersIcon, DocumentDuplicateIcon, MapPinIcon, ClockIcon, InformationCircleIcon
+    ChevronDownIcon, ChevronUpIcon, UsersIcon, DocumentDuplicateIcon, MapPinIcon, ClockIcon, InformationCircleIcon, WhatsAppIcon
 } from '../../../components/icons';
 import { db } from '../../../firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc, Timestamp, orderBy } from 'firebase/firestore';
+import {
+  listMembershipHistory,
+  createMembershipHistoryItem
+} from '@firebasegen/default-connector';
 
 
 interface OutletContextType {
@@ -56,7 +60,7 @@ interface AccordionSectionProps {
     badgeColor?: string;
 }
 const AccordionSection: React.FC<AccordionSectionProps> = ({ titleKey, icon, isOpen, onClick, children, badgeText, badgeColor }) => {
-    const { t, direction } = useTranslation();
+    const { t } = useTranslation();
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden">
             <button
@@ -87,7 +91,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({ titleKey, icon, isO
 };
 
 const ClinicProfileTabContent: React.FC = () => {
-    const { t, direction } = useTranslation();
+    const { t } = useTranslation();
     usePageTitle('dashboardClinicProfileTab');
     const { clinicData, handleClinicProfileSave, isLoading } = useOutletContext<OutletContextType>();
     
@@ -409,13 +413,120 @@ const ClinicMySpacesTabContent: React.FC = () => {
         </div>
     );
 };
+const ClinicBookingsTabContent: React.FC = () => {
+    usePageTitle('dashboardBookingsTab');
+    const { t } = useTranslation();
+    const { clinicData } = useOutletContext<OutletContextType>();
+    const [bookings, setBookings] = useState<ClinicBooking[]>([]);
+    const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+
+    useEffect(() => {
+        const fetchBookings = async () => {
+            if (!clinicData) return;
+            setIsLoadingBookings(true);
+            try {
+                const bookingsQuery = query(
+                    collection(db, 'bookings'),
+                    where('clinicId', '==', clinicData.id),
+                    orderBy('startTime', 'desc')
+                );
+                const snapshot = await getDocs(bookingsQuery);
+                const fetched: ClinicBooking[] = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Omit<ClinicBooking, 'id'>) }));
+                setBookings(fetched);
+            } catch (error) {
+                console.error('Error fetching bookings:', error);
+            }
+            setIsLoadingBookings(false);
+        };
+        fetchBookings();
+    }, [clinicData]);
+
+    const handleApprove = async (bookingId: string) => {
+        try {
+            await updateDoc(doc(db, 'bookings', bookingId), { status: 'accepted' });
+            setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'accepted' } : b));
+        } catch (error) {
+            console.error('Error approving booking:', error);
+        }
+    };
+
+    const handleDecline = async (bookingId: string) => {
+        try {
+            await updateDoc(doc(db, 'bookings', bookingId), { status: 'declined' });
+            setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'declined' } : b));
+        } catch (error) {
+            console.error('Error declining booking:', error);
+        }
+    };
+
+    const handleMessageTherapist = (booking: ClinicBooking) => {
+        if (!booking.therapistWhatsapp) return;
+        const clinicName = clinicData?.name || t('yourClinic', { default: 'your clinic' });
+        const message = t('whatsappGreetingClinicSpace', { spaceName: booking.spaceName || '', clinicName, appName: t('appName') });
+        window.open(`https://wa.me/${booking.therapistWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+    };
+
+    const pendingBookings = bookings.filter(b => b.status === 'pending');
+    const acceptedBookings = bookings.filter(b => b.status === 'accepted');
+    const pastBookings = bookings.filter(b => b.status !== 'pending' && b.status !== 'accepted');
+
+    const renderBooking = (booking: ClinicBooking, showActions = false) => (
+        <div key={booking.id} className="border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h4 className="text-md font-semibold text-textOnLight">{booking.spaceName || t('unnamedSpace')}</h4>
+                <p className="text-sm text-gray-700">{booking.therapistName}</p>
+                <p className="text-xs text-gray-500">{new Date(booking.startTime).toLocaleString()} - {new Date(booking.endTime).toLocaleString()}</p>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+                {showActions && (
+                    <>
+                        <Button size="sm" variant="primary" onClick={() => handleApprove(booking.id)}>{t('approveButtonLabel')}</Button>
+                        <Button size="sm" variant="danger" onClick={() => handleDecline(booking.id)}>{t('declineButtonLabel')}</Button>
+                    </>
+                )}
+                <Button size="sm" variant="light" onClick={() => handleMessageTherapist(booking)} leftIcon={<WhatsAppIcon className="w-4 h-4" />}>{t('messageTherapistButtonLabel')}</Button>
+            </div>
+        </div>
+    );
+
+    const renderSection = (titleKey: string, items: ClinicBooking[], showActions = false) => (
+        <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-accent">{t(titleKey)}</h3>
+            {items.length === 0 ? (
+                <p className="text-sm text-gray-500">{t('noBookingsMessage')}</p>
+            ) : (
+                items.map(b => renderBooking(b, showActions))
+            )}
+        </div>
+    );
+
+    if (isLoadingBookings) {
+        return <div className="p-6 text-center text-textOnLight">{t('loading')}</div>;
+    }
+
+    return (
+        <div className="space-y-8">
+            {renderSection('pendingBookings', pendingBookings, true)}
+            {renderSection('acceptedBookings', acceptedBookings)}
+            {renderSection('pastBookings', pastBookings)}
+        </div>
+    );
+};
 const ClinicAnalyticsTabContent: React.FC = () => {
     usePageTitle('dashboardAnalyticsTab');
     const { t } = useTranslation();
     const { clinicData } = useOutletContext<OutletContextType>();
 
+
     const [metrics, setMetrics] = useState<{ views: number; connections: number } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    interface ClinicAnalytics {
+        totalClinicViews: number;
+        totalTherapistConnections: number;
+    }
+
+    const [analytics, setAnalytics] = useState<ClinicAnalytics | null>(null);
+    const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -441,17 +552,35 @@ const ClinicAnalyticsTabContent: React.FC = () => {
                 setError(t('unexpectedError'));
             } finally {
                 setIsLoading(false);
+            if (!clinicData?.id) return;
+            setIsLoadingAnalytics(true);
+            try {
+                const analyticsDocRef = doc(db, `clinicsData/${clinicData.id}/analytics/summary`);
+                const analyticsSnap = await getDoc(analyticsDocRef);
+                if (analyticsSnap.exists()) {
+                    setAnalytics(analyticsSnap.data() as ClinicAnalytics);
+                } else {
+                    setAnalytics({ totalClinicViews: 0, totalTherapistConnections: 0 });
+                }
+                setError(null);
+            } catch (err) {
+                console.error('Error fetching clinic analytics:', err);
+                setError(t('errorLoadingAnalytics', { default: 'Unable to load analytics.' }));
+            } finally {
+                setIsLoadingAnalytics(false);
             }
         };
         fetchAnalytics();
     }, [clinicData?.id, t]);
 
     if (isLoading) {
+    if (isLoadingAnalytics) {
         return <div className="p-6 text-center text-textOnLight">{t('loading')}</div>;
     }
 
     if (error) {
         return <div className="p-6 text-center text-red-600">{error}</div>;
+        return <div className="p-6 text-center text-red-500">{error}</div>;
     }
 
     return (
@@ -463,11 +592,13 @@ const ClinicAnalyticsTabContent: React.FC = () => {
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalClinicViewsLabel')}</h4>
                     <p className="text-3xl font-bold text-accent">{metrics?.views ?? 0}</p>
+                    <p className="text-3xl font-bold text-accent">{(analytics?.totalClinicViews ?? 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{t('past30DaysLabel')}</p>
                 </div>
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalTherapistConnectionsLabel')}</h4>
                     <p className="text-3xl font-bold text-accent">{metrics?.connections ?? 0}</p>
+                    <p className="text-3xl font-bold text-accent">{(analytics?.totalTherapistConnections ?? 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{t('viaPlatformFeaturesLabel')}</p>
                 </div>
             </div>
@@ -687,9 +818,11 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             setClinicSpaceListings(spacesSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ClinicSpaceListing)));
             
             // Fetch membership history
-            const historyCollectionRef = collection(db, `clinicsData/${currentClinicData.id}/membershipHistory`);
-            const historyQuerySnapshot = await getDocs(query(historyCollectionRef, orderBy("date", "desc"))); 
-            setMembershipHistory(historyQuerySnapshot.docs.map((d: any) => ({id: d.id, ...d.data()} as MembershipHistoryItem)));
+            const historyResp = await listMembershipHistory();
+            const items = (historyResp.data.membership_history || [])
+              .filter((h: MembershipHistoryItem) => h.clinicId === currentClinicData.id)
+              .sort((a: MembershipHistoryItem, b: MembershipHistoryItem) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setMembershipHistory(items);
 
 
         } catch (error) {
@@ -821,13 +954,13 @@ const ClinicOwnerDashboardPageShell: React.FC = () => {
             await updateDoc(clinicDocRef, membershipUpdateForFirestore);
 
             const historyEntry: MembershipHistoryItem = {
-                id: `hist-${Date.now()}`, 
-                date: Timestamp.now().toDate().toISOString(),
+                id: `hist-${Date.now()}`,
+                clinicId: clinicData.id,
+                date: new Date().toISOString(),
                 action: t('membershipAppliedAction', { tier: STANDARD_MEMBERSHIP_TIER_NAME }),
                 details: t('receiptUploadedDetails')
             };
-            const historyDocRef = doc(collection(db, `clinicsData/${clinicData.id}/membershipHistory`), historyEntry.id);
-            await setDoc(historyDocRef, historyEntry);
+            await createMembershipHistoryItem(historyEntry);
 
             setClinicData(prev => prev ? ({ ...prev, ...membershipUpdateForState }) : null);
             setMembershipHistory(prev => [historyEntry, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -947,6 +1080,7 @@ export const ClinicOwnerDashboardRoutes = () => (
         <Route element={<ClinicOwnerDashboardPageShell />}>
             <Route index element={<ClinicProfileTabContent />} />
             <Route path="my-clinics" element={<ClinicMySpacesTabContent />} /> {/* Renamed from my-spaces to my-clinics in nav */}
+            <Route path="bookings" element={<ClinicBookingsTabContent />} />
             <Route path="analytics" element={<ClinicAnalyticsTabContent />} />
             <Route path="settings" element={<ClinicSettingsTabContent />} />
         </Route>
