@@ -30,6 +30,10 @@ import { ClinicSpaceCard } from '../../../components/therapist-finder/ClinicSpac
 import { ClinicSpaceDetailModal } from '../../../components/therapist-finder/ClinicSpaceDetailModal';
 import { db } from '../../../firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc, Timestamp, orderBy } from 'firebase/firestore';
+import {
+    listMembershipHistory,
+    createMembershipHistoryItem
+} from '@firebasegen/default-connector';
 
 
 interface OutletContextType {
@@ -269,16 +273,30 @@ const TherapistProfileTabContent: React.FC = () => {
                         id="languages" 
                         name="languages"
                         multiple
-                        value={formData.languages || []} 
+                        value={formData.languages || []}
                         onChange={handleLanguagesChange}
                         className="mt-1 block w-full h-32 px-3 py-2 border border-gray-300 bg-primary text-textOnLight rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent sm:text-sm"
                     >
                         {LANGUAGES_LIST.map((lang: string) => <option key={lang} value={lang}>{lang}</option>)}
                     </select>
                     <p className="mt-1 text-xs text-gray-500">{t('multiSelectHint')}</p>
-                }
-                 {formData.languages?.includes('Other') && (
+                </div>
+                {formData.languages?.includes('Other') && (
+
+
+                    <InputField
+                        label={t('otherLanguagesLabel')}
+                        id="otherLanguages"
+                        name="otherLanguages"
+                        value={otherLanguagesText}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtherLanguagesText(e.target.value)}
+                        description={t('otherLanguagesHint')}
+                    />
+
+
                     <InputField label={t('otherLanguagesLabel')} id="otherLanguages" name="otherLanguages" value={otherLanguagesText} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtherLanguagesText(e.target.value)} description={t('otherLanguagesHint')} />
+
+
                 )}
 
                 <TextareaField label={t('qualificationsCredentials')} id="qualifications" name="qualifications" 
@@ -529,6 +547,82 @@ const SpaceFilterModal: React.FC<SpaceFilterModalProps> = ({ isOpen, onClose, cu
                 </div>
             </div>
         </Modal>
+    );
+};
+
+const TherapistAnalyticsTabContent: React.FC = () => {
+    usePageTitle('dashboardAnalyticsTab');
+    const { t } = useTranslation();
+    const { therapistData } = useOutletContext<OutletContextType>();
+    const [profileViews, setProfileViews] = useState<number>(0);
+    const [likes, setLikes] = useState<number>(0);
+    const [inquiriesCount, setInquiriesCount] = useState<number>(0);
+    const [averageRating, setAverageRating] = useState<number>(0);
+
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            if (!therapistData?.id) return;
+            try {
+                const therapistDoc = await getDoc(doc(db, 'therapistsData', therapistData.id));
+                if (therapistDoc.exists()) {
+                    const data = therapistDoc.data();
+                    setProfileViews(data?.profileViews || 0);
+                    setLikes(data?.likes || 0);
+                }
+
+                const inquiriesSnapshot = await getDocs(
+                    query(
+                        collection(db, 'userInquiries'),
+                        where('targetId', '==', therapistData.id),
+                        where('targetType', '==', 'therapist')
+                    )
+                );
+                setInquiriesCount(inquiriesSnapshot.size);
+
+                const reviewsSnapshot = await getDocs(collection(db, 'therapistsData', therapistData.id, 'reviews'));
+                if (!reviewsSnapshot.empty) {
+                    let total = 0;
+                    reviewsSnapshot.forEach(doc => {
+                        const rating = doc.data().rating;
+                        if (typeof rating === 'number') total += rating;
+                    });
+                    setAverageRating(total / reviewsSnapshot.size);
+                } else {
+                    setAverageRating(0);
+                }
+            } catch (error) {
+                console.error('Error fetching analytics:', error);
+            }
+        };
+        fetchAnalytics();
+    }, [therapistData?.id]);
+
+    return (
+        <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-accent">{t('therapistEngagementMetricsTitle')}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50/50 p-6 rounded-lg shadow">
+                    <h4 className="text-lg font-medium text-textOnLight">{t('totalProfileViews')}</h4>
+                    <p className="text-3xl font-bold text-accent">{profileViews}</p>
+                </div>
+                <div className="bg-gray-50/50 p-6 rounded-lg shadow">
+                    <h4 className="text-lg font-medium text-textOnLight">{t('estimatedConnections')}</h4>
+                    <p className="text-3xl font-bold text-accent">{inquiriesCount}</p>
+                </div>
+                <div className="bg-gray-50/50 p-6 rounded-lg shadow">
+                    <h4 className="text-lg font-medium text-textOnLight">{t('totalProfileLikes')}</h4>
+                    <p className="text-3xl font-bold text-accent">{likes}</p>
+                </div>
+                <div className="bg-gray-50/50 p-6 rounded-lg shadow">
+                    <h4 className="text-lg font-medium text-textOnLight">{t('averageRating')}</h4>
+                    <p className="text-3xl font-bold text-accent">{averageRating.toFixed(1)}</p>
+                </div>
+            </div>
+            <div className="bg-gray-50/50 p-6 rounded-lg shadow text-center">
+                <InformationCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-600">{t('therapistViewTrendsPlaceholder')}</p>
+            </div>
+        </div>
     );
 };
 
@@ -926,9 +1020,11 @@ const TherapistDashboardPageShell: React.FC = () => {
                     setAvailableClinicSpaces([]);
                 }
                 
-                const historyCollectionRef = collection(db, `therapistsData/${firebaseUser.uid}/membershipHistory`);
-                const historyQuerySnapshot = await getDocs(query(historyCollectionRef, orderBy("date", "desc"))); 
-                setMembershipHistory(historyQuerySnapshot.docs.map((d: any) => ({id: d.id, ...d.data()} as MembershipHistoryItem)));
+                const historyResp = await listMembershipHistory();
+                const items = (historyResp.data.membership_history || [])
+                    .filter((h: MembershipHistoryItem) => h.clinicId === firebaseUser.uid)
+                    .sort((a: MembershipHistoryItem, b: MembershipHistoryItem) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                setMembershipHistory(items);
 
             } catch (error) {
                 console.error("Firebase error fetching therapist dashboard data:", error);
@@ -1042,13 +1138,13 @@ const TherapistDashboardPageShell: React.FC = () => {
             await updateDoc(therapistDocRef, applicationDataForFirestore);
             
             const historyEntry: MembershipHistoryItem = {
-                id: `hist-${Date.now()}`, 
+                id: `hist-${Date.now()}`,
+                clinicId: firebaseUser.uid,
                 date: new Date().toISOString(),
                 action: t('membershipAppliedAction', { tier: STANDARD_MEMBERSHIP_TIER_NAME }),
                 details: t('receiptUploadedDetails')
             };
-            const historyDocRef = doc(collection(db, `therapistsData/${firebaseUser.uid}/membershipHistory`), historyEntry.id);
-            await setDoc(historyDocRef, historyEntry);
+            await createMembershipHistoryItem(historyEntry);
 
             setTherapistData((prev: Therapist | null) => prev ? ({...prev, ...applicationDataForState}) : null);
             setMembershipHistory(prev => [historyEntry, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -1148,6 +1244,7 @@ export const TherapistDashboardRoutes = () => (
         <Route element={<TherapistDashboardPageShell />}>
             <Route index element={<TherapistProfileTabContent />} />
             <Route path="licenses" element={<TherapistLicensesTabContent />} />
+            <Route path="analytics" element={<TherapistAnalyticsTabContent />} />
             <Route path="space-rental" element={<TherapistSpaceRentalTabContent />} />
             <Route path="settings" element={<TherapistSettingsTabContent />} />
         </Route>

@@ -48,6 +48,16 @@ TheraWay is a comprehensive mental health web application designed to connect cl
 
 **FAILURE TO FOLLOW THESE STEPS WILL RESULT IN THE APPLICATION NOT CONNECTING TO FIREBASE (e.g., "Could not reach Cloud Firestore backend" errors).**
 
+### Service Account Key
+
+Some scripts and deployment steps require Firebase Admin credentials. Generate a service account in the Firebase Console and download its JSON key. Store this file **outside** the repository and reference it via an environment variable, for example:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
+```
+
+The `serviceAccountKey.json` file is already listed in `.gitignore` and should never be committed to version control.
+
 1.  **Create Firebase Project:** Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
 2.  **Add Web App:** Add a web application to your Firebase project.
 3.  **Firebase Configuration (MOST IMPORTANT):**
@@ -62,12 +72,14 @@ TheraWay is a comprehensive mental health web application designed to connect cl
           authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // From Firebase Console
           projectId: "YOUR_PROJECT_ID", // From Firebase Console
           storageBucket: "YOUR_PROJECT_ID.appspot.com", // From Firebase Console (domain may end with appspot.com or firebasestorage.app)
+          storageBucket: "YOUR_PROJECT_ID.appspot.com", // From Firebase Console (verify if it's appspot.com or firebasestorage.app)
           messagingSenderId: "YOUR_SENDER_ID", // From Firebase Console
           appId: "YOUR_APP_ID" // From Firebase Console
         };
         ```
     *   **Double-check every field.** Pay special attention to `projectId`. The `storageBucket` is often `YOUR_PROJECT_ID.appspot.com`, but some newer projects use `YOUR_PROJECT_ID.firebasestorage.app`. Use the value shown in your Firebase project settings.
     *   **Storage bucket domains:** Projects created before 2023 typically use the `appspot.com` domain, while newer projects may use `firebasestorage.app`.
+    *   **Double-check every field.** Pay special attention to `projectId`. The `storageBucket` value depends on your project: older Firebase projects use `YOUR_PROJECT_ID.appspot.com`, while newer ones use `YOUR_PROJECT_ID.firebasestorage.app`. Copy the exact value shown in your Firebase project settings.
     *   **If you see warnings in your browser console about placeholder values OR if the `projectId` in the console log from `firebase.ts` (e.g., "Firebase config loaded with Project ID: YOUR_PROJECT_ID") is not YOUR project ID, it means you have not updated this file correctly.**
 
 4.  **Enable Services - ESPECIALLY FIRESTORE:** In the Firebase Console for your project:
@@ -309,3 +321,29 @@ npm run monitor-firestore
     5.  If deploying to a subdirectory (e.g., `/app/`), ensure the `base` path in `vite.config.ts` is set correctly (`base: '/app/'`) before building.
 
 **Remember to configure Firebase correctly in `firebase.ts` AND ENABLE FIRESTORE DATABASE in the Firebase console, and set up Firestore and Storage security rules before deploying to production.**
+## Data Connect Deployment
+
+To keep Firestore and Postgres in sync, Cloud Functions forward document changes to Firebase Data Connect.
+
+1. Deploy the Data Connect schema and connector:
+   ```bash
+   firebase dataconnect:deploy
+   ```
+2. Configure the Cloud Functions environment with your Data Connect endpoint. For local development copy `.env.example` to `.env` and fill in the values:
+   ```
+   DATA_CONNECT_ENDPOINT=https://us-central1-your-project.fdc.googleapis.com/graphql
+   DATA_CONNECT_SERVICE_ID=theraway-v3
+   DATA_CONNECT_LOCATION=us-central1
+   ```
+   For deployed functions set the variables:
+   ```bash
+   firebase functions:config:set dataconnect.endpoint="https://us-central1-your-project.fdc.googleapis.com/graphql" \
+     dataconnect.service_id="theraway-v3" dataconnect.location="us-central1"
+   ```
+3. Build and deploy the functions:
+   ```bash
+   npm --prefix functions run build
+   firebase deploy --only functions
+   ```
+
+Failed sync operations are retried automatically and logged for troubleshooting.
