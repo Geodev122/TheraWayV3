@@ -186,14 +186,8 @@ service cloud.firestore {
       // Therapists and Clients can read public clinic information.
       // Move sensitive clinic fields to another collection or expose sanitized data via Cloud Functions if required.
       allow read: if (isTherapist() || isClient()) &&
-
-                     resource.data.roles.hasAny(["therapist", "clinic_owner"]);
-=======
-                     resource.data.roles.hasAny(["therapist", "clinic_owner"]) &&
-                     request.query.keys().hasOnly([
-                         'id', 'name', 'profilePictureUrl', 'photos', 'amenities', 'operatingHours',
-                     'services', 'address', 'lat', 'lng', 'description', 'isVerified'
-                     ]);
+                     resource.data.roles.hasAny(["therapist","clinic_owner"]) &&
+                     request.query.keys().hasOnly(['id','name','profilePictureUrl','photos','amenities','operatingHours','services','address','lat','lng','description','isVerified']);
 
     }
 
