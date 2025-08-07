@@ -61,12 +61,13 @@ TheraWay is a comprehensive mental health web application designed to connect cl
           apiKey: "YOUR_ACTUAL_API_KEY_HERE", // From Firebase Console
           authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // From Firebase Console
           projectId: "YOUR_PROJECT_ID", // From Firebase Console
-          storageBucket: "YOUR_PROJECT_ID.appspot.com", // From Firebase Console (verify if it's .appspot.com or .firebasestorage.app)
+          storageBucket: "YOUR_PROJECT_ID.appspot.com", // From Firebase Console (domain may end with appspot.com or firebasestorage.app)
           messagingSenderId: "YOUR_SENDER_ID", // From Firebase Console
           appId: "YOUR_APP_ID" // From Firebase Console
         };
         ```
-    *   **Double-check every field.** Pay special attention to `projectId`. The `storageBucket` is often `YOUR_PROJECT_ID.appspot.com`, but verify this in your Firebase project settings.
+    *   **Double-check every field.** Pay special attention to `projectId`. The `storageBucket` is often `YOUR_PROJECT_ID.appspot.com`, but some newer projects use `YOUR_PROJECT_ID.firebasestorage.app`. Use the value shown in your Firebase project settings.
+    *   **Storage bucket domains:** Projects created before 2023 typically use the `appspot.com` domain, while newer projects may use `firebasestorage.app`.
     *   **If you see warnings in your browser console about placeholder values OR if the `projectId` in the console log from `firebase.ts` (e.g., "Firebase config loaded with Project ID: YOUR_PROJECT_ID") is not YOUR project ID, it means you have not updated this file correctly.**
 
 4.  **Enable Services - ESPECIALLY FIRESTORE:** In the Firebase Console for your project:
