@@ -62,7 +62,7 @@ interface AccordionSectionProps {
     badgeColor?: string;
 }
 const AccordionSection: React.FC<AccordionSectionProps> = ({ titleKey, icon, isOpen, onClick, children, badgeText, badgeColor }) => {
-    const { t } = useTranslation();
+    const { t, direction } = useTranslation();
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden">
             <button
