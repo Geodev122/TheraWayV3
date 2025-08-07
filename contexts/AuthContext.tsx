@@ -1,16 +1,25 @@
 
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
+import {
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  User as FirebaseAuthUser,
+  AuthProvider as FirebaseAuthProvider,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db, firebaseConfig } from '../firebase'; // Ensure firebase.ts is correctly set up
 import { User, UserRole } from '../types';
 import { DEFAULT_USER_ROLE, APP_NAME } from '../constants';
 
-const googleProvider = new firebase.auth.GoogleAuthProvider();
-const facebookProvider = new firebase.auth.FacebookAuthProvider();
+const googleProvider = new GoogleAuthProvider();
+const facebookProvider = new FacebookAuthProvider();
 
-type FirebaseUser = firebase.User;
+type FirebaseUser = FirebaseAuthUser;
 
 interface AuthContextType {
   user: User | null; 
@@ -70,14 +79,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (fbUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setAuthLoading(true);
       if (fbUser) {
         setFirebaseUser(fbUser);
-        const userDocRef = db.collection('users').doc(fbUser.uid);
+        const userDocRef = doc(db, 'users', fbUser.uid);
         try {
-          const userDocSnap = await userDocRef.get();
-          if (userDocSnap.exists) {
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
             const existingUserData = userDocSnap.data() as User;
             const updates: Partial<User> = {};
             if (fbUser.displayName && fbUser.displayName !== existingUserData.name) {
@@ -87,12 +96,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               updates.profilePictureUrl = fbUser.photoURL;
             }
             // Ensure email is synced if it was null or a placeholder before
-             if (fbUser.email && (!existingUserData.email || existingUserData.email.startsWith('social_'))) {
-                updates.email = fbUser.email;
+            if (fbUser.email && (!existingUserData.email || existingUserData.email.startsWith('social_'))) {
+              updates.email = fbUser.email;
             }
 
             if (Object.keys(updates).length > 0) {
-              await userDocRef.update({ ...updates, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+              await updateDoc(userDocRef, { ...updates, updatedAt: serverTimestamp() });
               setUser({ ...existingUserData, ...updates });
             } else {
               setUser(existingUserData);
@@ -106,10 +115,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               roles: [DEFAULT_USER_ROLE], // Default to an array with the client role
               profilePictureUrl: fbUser.photoURL,
             };
-            await db.collection('users').doc(fbUser.uid).set({
+            await setDoc(doc(db, 'users', fbUser.uid), {
               ...newTheraWayUser,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
             });
             setUser(newTheraWayUser);
             console.log(`AuthContext: Created new Firestore user document for social login: ${fbUser.uid}`);
@@ -136,7 +145,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           } else {
              setAuthError(`Failed to load user profile. (${error.code || 'Unknown error'})`);
           }
-          await auth.signOut(); // Attempt to sign out to prevent broken state
+          await signOut(auth); // Attempt to sign out to prevent broken state
           setUser(null);
           setFirebaseUser(null);
         }
@@ -157,10 +166,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { ...prevUser, ...updatedUserData };
     });
     if (firebaseUser && updatedUserData) {
-        const userDocRef = db.collection('users').doc(firebaseUser.uid);
-        await userDocRef.update({
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        await updateDoc(userDocRef, {
             ...updatedUserData,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            updatedAt: serverTimestamp()
         });
     }
   }, [firebaseUser]);
@@ -174,7 +183,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
     }
     try {
-      await auth.signInWithEmailAndPassword(email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       setIsLoginPromptVisible(false);
       setActionAttempted(null);
     } catch (error: any) {
@@ -195,7 +204,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
     }
     try {
-      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const fbUser = userCredential.user;
       
       if (!fbUser) throw new Error("User creation failed.");
@@ -208,10 +217,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         profilePictureUrl: fbUser.photoURL, 
       };
 
-      await db.collection('users').doc(fbUser.uid).set({
+      await setDoc(doc(db, 'users', fbUser.uid), {
         ...theraWayUser,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
 
       setUser(theraWayUser); 
@@ -225,11 +234,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [mapAuthCodeToMessage]);
 
-  const socialSignIn = async (provider: firebase.auth.AuthProvider, providerName: string) => {
+  const socialSignIn = async (provider: FirebaseAuthProvider, providerName: string) => {
     setAuthLoading(true);
     setAuthError(null);
     try {
-      await auth.signInWithPopup(provider);
+      await signInWithPopup(auth, provider);
       // onAuthStateChanged will handle setting user and firebaseUser states,
       // including Firestore document creation/update for social users.
       setIsLoginPromptVisible(false);
@@ -255,7 +264,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAuthLoading(true);
     setAuthError(null);
     try {
-      await auth.signOut();
+      await signOut(auth);
       setUser(null);
       setFirebaseUser(null);
       setIsLoginPromptVisible(false);
