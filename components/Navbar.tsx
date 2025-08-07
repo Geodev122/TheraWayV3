@@ -24,10 +24,30 @@ export const Navbar: React.FC = () => {
     navigate('/login');
   }
 
+  const getNextLanguage = (lang: string) => {
+    if (lang === 'en') return 'ar';
+    if (lang === 'ar') return 'fr';
+    return 'en';
+  };
+
   const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'ar' : 'en');
+    setLanguage(getNextLanguage(language));
     setIsMobileMenuOpen(false);
   };
+
+  const languageLabels: Record<string, string> = {
+    en: t('english'),
+    ar: t('arabic'),
+    fr: t('french'),
+  };
+
+  const languageAbbreviations: Record<string, string> = {
+    en: 'EN',
+    ar: 'AR',
+    fr: 'FR',
+  };
+
+  const nextLanguage = getNextLanguage(language);
 
   const publicLinks = [
     { path: '/find', labelKey: 'findTherapists' },
@@ -122,9 +142,9 @@ export const Navbar: React.FC = () => {
               size="sm"
               onClick={toggleLanguage}
               className="!px-3 !py-2 !text-textOnLight/70 hover:!text-accent hover:!bg-accent/10"
-              title={language === 'en' ? 'Switch to Arabic' : 'Switch to English'}
+              title={`Switch to ${languageLabels[nextLanguage]}`}
             >
-              {language === 'en' ? t('arabic') : t('english')}
+              {languageLabels[nextLanguage]}
             </Button>
             {isAuthenticated && user ? (
               <div className="relative group">
@@ -167,9 +187,9 @@ export const Navbar: React.FC = () => {
               size="sm"
               onClick={toggleLanguage}
               className="!p-2 !text-textOnLight/70 hover:!text-accent hover:!bg-accent/10"
-              title={language === 'en' ? 'Switch to Arabic' : 'Switch to English'}
+              title={`Switch to ${languageLabels[nextLanguage]}`}
             >
-              {language === 'en' ? 'AR' : 'EN'}
+              {languageAbbreviations[nextLanguage]}
             </Button>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

@@ -1,7 +1,7 @@
 import React, { createContext, useState, ReactNode, useEffect, useCallback, useContext } from 'react';
 import toast from 'react-hot-toast';
 
-type Language = 'en' | 'ar';
+type Language = 'en' | 'ar' | 'fr';
 type Direction = 'ltr' | 'rtl';
 
 export interface LanguageContextType {
@@ -16,7 +16,8 @@ export const LanguageContext = createContext<LanguageContextType | undefined>(un
 
 const translations: Record<Language, Record<string, string>> = {
   en: {},
-  ar: {}
+  ar: {},
+  fr: {}
 };
 
 // This function will now be more resilient and not throw a blocking error.
@@ -60,7 +61,11 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     const loadInitialTranslations = async () => {
       console.log("LanguageProvider: Starting to load initial translations...");
       // Promise.all will now complete even if one of the fetches fails.
-      await Promise.all([loadTranslations('en'), loadTranslations('ar')]);
+      await Promise.all([
+        loadTranslations('en'),
+        loadTranslations('ar'),
+        loadTranslations('fr'),
+      ]);
       setIsLoaded(true);
       console.log("LanguageProvider: Finished loading initial translations attempt. isLoaded:", true);
     };
