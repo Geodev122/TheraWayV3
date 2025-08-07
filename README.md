@@ -2,6 +2,13 @@
 
 TheraWay is a comprehensive mental health web application designed to connect clients with therapists and assist therapists in finding suitable clinic spaces. It features distinct dashboards and functionalities for Clients, Therapists, Clinic Owners, and Administrators.
 
+## Setup
+
+1. Copy `.env.example` to `.env` and supply Firebase and Data Connect credentials.
+2. Install dependencies: `npm install`
+3. Start the development server: `npm run dev`
+4. Visit `http://localhost:5173` and verify the landing page loads.
+
 ## Key Features
 
 *   **Home Page:** A welcoming landing page at `/` introducing the platform and its features.
