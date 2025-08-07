@@ -517,6 +517,9 @@ const ClinicAnalyticsTabContent: React.FC = () => {
     const { t } = useTranslation();
     const { clinicData } = useOutletContext<OutletContextType>();
 
+
+    const [metrics, setMetrics] = useState<{ views: number; connections: number } | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     interface ClinicAnalytics {
         totalClinicViews: number;
         totalTherapistConnections: number;
@@ -528,6 +531,27 @@ const ClinicAnalyticsTabContent: React.FC = () => {
 
     useEffect(() => {
         const fetchAnalytics = async () => {
+            if (!clinicData?.id) {
+                setIsLoading(false);
+                return;
+            }
+            try {
+                const analyticsRef = doc(db, 'clinicAnalytics', clinicData.id);
+                const analyticsSnap = await getDoc(analyticsRef);
+                if (analyticsSnap.exists()) {
+                    const data = analyticsSnap.data();
+                    setMetrics({
+                        views: data.totalViews ?? 0,
+                        connections: data.therapistConnections ?? 0,
+                    });
+                } else {
+                    setMetrics({ views: 0, connections: 0 });
+                }
+            } catch (err) {
+                console.error('Error fetching clinic analytics:', err);
+                setError(t('unexpectedError'));
+            } finally {
+                setIsLoading(false);
             if (!clinicData?.id) return;
             setIsLoadingAnalytics(true);
             try {
@@ -549,11 +573,13 @@ const ClinicAnalyticsTabContent: React.FC = () => {
         fetchAnalytics();
     }, [clinicData?.id, t]);
 
+    if (isLoading) {
     if (isLoadingAnalytics) {
         return <div className="p-6 text-center text-textOnLight">{t('loading')}</div>;
     }
 
     if (error) {
+        return <div className="p-6 text-center text-red-600">{error}</div>;
         return <div className="p-6 text-center text-red-500">{error}</div>;
     }
 
@@ -565,11 +591,13 @@ const ClinicAnalyticsTabContent: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalClinicViewsLabel')}</h4>
+                    <p className="text-3xl font-bold text-accent">{metrics?.views ?? 0}</p>
                     <p className="text-3xl font-bold text-accent">{(analytics?.totalClinicViews ?? 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{t('past30DaysLabel')}</p>
                 </div>
                 <div className="bg-gray-50/50 p-6 rounded-lg shadow">
                     <h4 className="text-lg font-medium text-textOnLight">{t('totalTherapistConnectionsLabel')}</h4>
+                    <p className="text-3xl font-bold text-accent">{metrics?.connections ?? 0}</p>
                     <p className="text-3xl font-bold text-accent">{(analytics?.totalTherapistConnections ?? 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{t('viaPlatformFeaturesLabel')}</p>
                 </div>
