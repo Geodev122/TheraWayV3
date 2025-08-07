@@ -1,14 +1,9 @@
 import admin from "firebase-admin";
 import { readFileSync } from "fs";
 
-// Load the service account key JSON file
-const serviceAccount = JSON.parse(
-  readFileSync("./serviceAccountKey.json", "utf8")
-);
-
-// Initialize Firebase Admin SDK
+// Initialize Firebase Admin SDK using credentials from GOOGLE_APPLICATION_CREDENTIALS
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.applicationDefault(),
   databaseURL: "https://theraway-draft-default-rtdb.europe-west1.firebasedatabase.app",
 });
 
