@@ -26,6 +26,9 @@ describe('useTranslation', () => {
       if (path.includes('ar.json')) {
         return Promise.resolve({ ok: true, json: async () => ({}) }) as any;
       }
+      if (path.includes('fr.json')) {
+        return Promise.resolve({ ok: true, json: async () => ({}) }) as any;
+      }
       return Promise.reject(new Error('Unknown URL'));
     });
 
