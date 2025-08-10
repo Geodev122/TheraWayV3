@@ -10,6 +10,8 @@ import { UserRole } from './types';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { firebaseConfig } from './firebase';
+import { FirebaseConfigMissing } from './components/FirebaseConfigMissing';
 
 
 // Lazy load page components for better performance
@@ -164,10 +166,14 @@ const queryClient = new QueryClient({
 });
 
 const App: React.FC = () => {
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    return <FirebaseConfigMissing />;
+  }
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <LanguageProvider> 
+        <LanguageProvider>
           <AuthProvider>
             <ReactRouterDOM.BrowserRouter>
               <AppContent />

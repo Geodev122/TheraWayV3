@@ -4,7 +4,13 @@ TheraWay is a comprehensive mental health web application designed to connect cl
 
 ## Setup
 
-1. Copy `.env.example` to `.env` and supply Firebase and Data Connect credentials.
+1. Copy `.env.example` to `.env` and supply Firebase and Data Connect credentials:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Then edit `.env` and fill in the Firebase configuration values for your project.
 2. Install dependencies: `npm install`
 3. Start the development server: `npm run dev`
 4. Visit `http://localhost:5173` and verify the landing page loads.
