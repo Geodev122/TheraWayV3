@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, waitFor, renderHook } from '@testing-library/react';
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 
 import { LanguageProvider } from '../../contexts/LanguageContext';
@@ -59,13 +59,10 @@ describe('useTranslation', () => {
   });
 
   it('throws error when used outside LanguageProvider', () => {
-    const OutsideComponent = () => {
-      useTranslation();
-      return null;
-    };
-
-    expect(() => render(<OutsideComponent />)).toThrow(
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => renderHook(() => useTranslation())).toThrow(
       'useTranslation must be used within a LanguageProvider'
     );
+    consoleError.mockRestore();
   });
 });
