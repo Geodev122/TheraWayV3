@@ -19,6 +19,9 @@ try {
     </React.StrictMode>
   );
 } catch (error) {
+  // Log the full error details to help with troubleshooting
+  console.error('Application failed to start:', error);
+
   const rootElement = document.getElementById('root');
   if (rootElement) {
     const root = ReactDOM.createRoot(rootElement);
