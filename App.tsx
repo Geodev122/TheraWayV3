@@ -17,7 +17,12 @@ const HomePage = React.lazy(() => import('./pages/HomePage').then(module => ({ d
 const LoginPage = React.lazy(() => import('./pages/LoginPage').then(module => ({ default: module.LoginPage })));
 const TherapistFinderPage = React.lazy(() => import('./pages/TherapistFinderPage').then(module => ({ default: module.TherapistFinderPage })));
 const TherapistDashboardRoutes = React.lazy(() => import('./pages/dashboard/therapist/TherapistDashboardPage').then(module => ({ default: module.TherapistDashboardRoutes })));
-const ClinicOwnerDashboardRoutes = React.lazy(() => import('./pages/dashboard/clinic-owner/ClinicOwnerDashboardPage').then(module => ({ default: module.ClinicOwnerDashboardRoutes })));
+// Clinic owner dashboard routes use the nested clinic-owner path exclusively
+const ClinicOwnerDashboardRoutes = React.lazy(() =>
+  import('./pages/dashboard/clinic-owner/ClinicOwnerDashboardPage').then(m => ({
+    default: m.ClinicOwnerDashboardRoutes,
+  }))
+);
 const AdminDashboardRoutes = React.lazy(() => import('./pages/dashboard/admin/AdminDashboardPage').then(module => ({ default: module.AdminDashboardRoutes })));
 const ClientProfilePage = React.lazy(() => import('./pages/dashboard/client/ClientProfilePage').then(module => ({ default: module.ClientProfilePage })));
 
